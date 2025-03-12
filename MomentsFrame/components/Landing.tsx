@@ -8,7 +8,7 @@ export default function Home() {
     <>
       <main className="flex flex-col p-4">
   
-    <div className="flex flex-col h-[calc(100vh-180px)]">
+    <div className="flex flex-col h-[calc(100vh-200px)]">
       <main className="flex-grow flex items-center justify-center px-4 sm:px-6 lg:px-8 relative">
         <video 
           autoPlay 
