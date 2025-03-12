@@ -24,7 +24,7 @@ export default function Home() {
           <div className="text-center">
             {/* <Heart className="mx-auto h-20 w-20 text-pink-600 animate-pulse" /> */}
             <h1 className="mt-6 text-4xl font-extrabold text-white sm:text-5xl md:text-6xl">
-              Welcome to <span className="text-pink-600">Moments</span>
+              Welcome to <span className="gradient-text from-[#6d63fe] to-purple-500">My Moments</span>
             </h1>
             <p className="mt-6 text-xl text-gray-100 sm:text-2xl max-w-3xl mx-auto">
               Create an on-chain record of your eternal love and celebrate your commitment on the blockchain

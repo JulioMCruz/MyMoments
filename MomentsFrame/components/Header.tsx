@@ -32,7 +32,7 @@ export default function Header() {
       <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center">
         <Link href="/" className="flex items-center text-2xl font-bold sm:mb-0">
           <Image src="/assets/momentsLogo.png" alt="Moments Logo" width={64} height={64} className="mr-2" />
-          <span className="text-white">Moments</span>
+          <span className="text-white">My Moments</span>
         </Link>
         {/* <div>
             <span className="text-sm text-white bg-opacity-20 px-3 rounded-full">{`Welcome ${context?.user.displayName}`}</span>
