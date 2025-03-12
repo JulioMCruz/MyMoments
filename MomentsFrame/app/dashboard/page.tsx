@@ -18,6 +18,7 @@ import { QRCodeSVG } from "qrcode.react"
 import { Share2, Twitter, Copy, Edit, Eye, FileText, PenSquare } from "lucide-react"
 import { UserInfoCard } from "@/components/UserInfoCard"
 import { useToast } from "@/components/ui/use-toast"
+import { Footer } from "@/components/Footer"
 
 
 interface Marriage {
@@ -209,6 +210,7 @@ export default function Dashboard() {
   }
 
   return (
+    <>
     <div className="container mx-auto px-4 py-4 sm:py-8">
       {/* <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">Your Dashboard</h1> */}
 
@@ -216,7 +218,7 @@ export default function Dashboard() {
 
       <div className="flex justify-between items-center mb-4 sm:mb-6">
         <h2 className="text-xl sm:text-2xl font-semibold">Your Moments</h2>
-        <Button onClick={handleCreateProposal}>Create New Moment</Button>
+        <Button onClick={handleCreateProposal} className="moments-button">+ Moment</Button>
       </div>
 
       <div className="grid gap-4 sm:gap-6 md:grid-cols-1 lg:grid-cols-2">
@@ -351,6 +353,8 @@ export default function Dashboard() {
         </DialogContent>
       </Dialog>
     </div>
+    <Footer />
+    </>
   )
 }
 

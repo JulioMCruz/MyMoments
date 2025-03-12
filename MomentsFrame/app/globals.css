@@ -126,5 +126,5 @@
 }
 
 .moments-button {
-  @apply w-full max-w-[200px] mb-4 bg-gradient-to-r from-[#6d63fe] to-purple-500 active:scale-[0.98] transition-transform text-white text-xl py-8 rounded-xl shadow-xl font-bold;
+  @apply w-full max-w-[180px] bg-gradient-to-r from-[#6d63fe] to-purple-500 active:scale-[0.98] transition-transform text-white text-lg py-6 rounded-xl shadow-xl font-bold;
 }
