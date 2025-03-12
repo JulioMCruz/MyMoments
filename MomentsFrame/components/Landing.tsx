@@ -14,12 +14,12 @@ export default function Home() {
           playsInline
           className="absolute inset-0 w-full h-full object-cover"
         >
-          <source src="/assets/wedding.mp4" type="video/mp4" />
+          <source src="/assets/moments.mp4" type="video/mp4" />
         </video>
         <div className="absolute inset-0 bg-gray-900/60" />
         <div className="w-full max-w-5xl mt-8 relative z-10">
           <div className="text-center">
-            <Heart className="mx-auto h-20 w-20 text-pink-600 animate-pulse" />
+            {/* <Heart className="mx-auto h-20 w-20 text-pink-600 animate-pulse" /> */}
             <h1 className="mt-6 text-4xl font-extrabold text-white sm:text-5xl md:text-6xl">
               Welcome to <span className="text-pink-600">Moments</span>
             </h1>
@@ -30,7 +30,7 @@ export default function Home() {
               <Link href="/dashboard">
                 <Button
                   size="lg"
-                  className="text-lg px-8 py-4 rounded-full button-gradient text-white hover:shadow-lg transition-all duration-300"
+                  className="moments-button"
                 >
                   Get Started
                   <ArrowRight className="ml-2 h-5 w-5" />
