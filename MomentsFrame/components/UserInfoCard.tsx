@@ -76,18 +76,17 @@ export function UserInfoCard() {
   }
 
   return (
-    <Card className="w-full mb-3">
+    <Card className="w-full mb-3 bg-gradient-to-r from-pink-300 to-purple-500">
 
-      <div className="h-24 bg-gradient-to-r from-pink-300 to-purple-500"></div>
+      <div className="h-2 bg-gradient-to-r from-pink-300 to-purple-500"></div>
 
-      <CardContent className="p-6">
+      <CardContent className="p-6 bg-white">
         
         <div className="flex justify-between items-start -mt-12 mb-4">
           <Avatar className="h-24 w-24 border-4 border-background shadow-xl">
             <AvatarImage src={context?.user.pfpUrl || "/placeholder.png"} alt={context?.user.displayName || ""} />
             <AvatarFallback className="bg-primary text-2xl">{context?.user.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback>
           </Avatar>
-
         </div>    
 
         <div className="space-y-4">
@@ -103,12 +102,16 @@ export function UserInfoCard() {
 
           <div className="flex gap-4 text-sm">
             <div>
-              <span className="font-bold">{followers}</span>
-              <span className="text-muted-foreground ml-1">followers</span>
+              <span className="font-bold">6</span>
+              <span className="text-muted-foreground ml-1">Active Moments</span>
             </div>
             <div>
-              <span className="font-bold">{following}</span>
-              <span className="text-muted-foreground ml-1">following</span>
+              <span className="font-bold">12</span>
+              <span className="text-muted-foreground ml-1">Completed</span>
+            </div>
+            <div>
+              <span className="font-bold">3</span>
+              <span className="text-muted-foreground ml-1">NFTs Minted</span>
             </div>
           </div>
 
@@ -130,12 +133,10 @@ export function UserInfoCard() {
                 </Tooltip>
               </TooltipProvider>
             </div>
-          </div>
 
-          <div className="flex justify-center pt-4">
             <div className="relative bg-white p-2 rounded-lg">
               <div className="flex-shrink-0 flex flex-col items-center w-full md:w-auto">
-                <QRCodeSVG value={address || ""} size={150} />
+                <QRCodeSVG value={address || ""} size={120} />
               </div>
             </div>
           </div>

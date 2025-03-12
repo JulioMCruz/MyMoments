@@ -1,10 +1,11 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Heart } from "lucide-react"
-
+import { Footer } from "@/components/Footer"
 
 export default function Home() {
   return (
+    <>
     <div className="flex flex-col h-[calc(100vh-180px)]">
       <main className="flex-grow flex items-center justify-center px-4 sm:px-6 lg:px-8 relative">
         <video 
@@ -41,6 +42,8 @@ export default function Home() {
         </div>
       </main>
     </div>
+        <Footer />
+</>
   )
 }
 
