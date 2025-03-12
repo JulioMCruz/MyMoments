@@ -24,10 +24,10 @@ import { Footer } from "@/components/Footer"
 interface Moments {
   id: string
   title: string
-  spouse1Name: string
-  spouse1Address: string
-  spouse2Name: string
-  spouse2Address: string
+  participant1Name: string
+  participant1Address: string
+  participant2Name: string
+  participant2Address: string
   date: string
   status: "Created" | "Proposed" | "Signed" | "Rejected"
   imageUrl: string
@@ -64,10 +64,10 @@ export default function Dashboard() {
           {
             id: "1",
             title: "Alice & Bob's Union",
-            spouse1Name: "Alice",
-            spouse1Address: "0x1234...5678",
-            spouse2Name: "Bob",
-            spouse2Address: "0x5678...9abc",
+            participant1Name: "Alice",
+            participant1Address: "0x1234...5678",
+            participant2Name: "Bob",
+            participant2Address: "0x5678...9abc",
             date: "2023-07-01",
             status: "Signed",
             imageUrl: "/placeholder.png?height=200&width=300",
@@ -75,10 +75,10 @@ export default function Dashboard() {
           {
             id: "2",
             title: "Carol & Dave's Commitment",
-            spouse1Name: "Carol",
-            spouse1Address: "0xabcd...ef01",
-            spouse2Name: "Dave",
-            spouse2Address: "0xef01...2345",
+            participant1Name: "Carol",
+            participant1Address: "0xabcd...ef01",
+            participant2Name: "Dave",
+            participant2Address: "0xef01...2345",
             date: "2023-08-15",
             status: "Proposed",
             imageUrl: "/placeholder.png?height=200&width=300",
@@ -86,32 +86,32 @@ export default function Dashboard() {
           {
             id: "3",
             title: "Eve & Frank's Partnership",
-            spouse1Name: "Eve",
-            spouse1Address: "0x2345...6789",
-            spouse2Name: "Frank",
-            spouse2Address: "0x6789...abcd",
+            participant1Name: "Eve",
+            participant1Address: "0x2345...6789",
+            participant2Name: "Frank",
+            participant2Address: "0x6789...abcd",
             date: "2023-09-30",
             status: "Signed",
             imageUrl: "/placeholder.png?height=200&width=300",
           },
           {
             id: "4",
-            title: "Grace & Henry's Proposal",
-            spouse1Name: "Grace",
-            spouse1Address: "0xcdef...0123",
-            spouse2Name: "Henry",
-            spouse2Address: "0x0123...4567",
+            title: "Grace & Henry's Moment",
+            participant1Name: "Grace",
+            participant1Address: "0xcdef...0123",
+            participant2Name: "Henry",
+            participant2Address: "0x0123...4567",
             date: "2023-10-15",
             status: "Created",
             imageUrl: "/placeholder.png?height=200&width=300",
           },
           {
             id: "5",
-            title: "Ivy & Jack's Proposal",
-            spouse1Name: "Ivy",
-            spouse1Address: "0x7890...abcd",
-            spouse2Name: "Jack",
-            spouse2Address: "0xefgh...5678",
+            title: "Ivy & Jack's Moment",
+            participant1Name: "Ivy",
+            participant1Address: "0x7890...abcd",
+            participant2Name: "Jack",
+            participant2Address: "0xefgh...5678",
             date: "2023-11-01",
             status: "Rejected",
             imageUrl: "/placeholder.png?height=200&width=300",
@@ -129,32 +129,32 @@ export default function Dashboard() {
     fetchMomentss()
   }, [])
 
-  const handleCreateProposal = () => {
+  const handleCreateMoment = () => {
     router.push("/propose")
   }
 
-  const handleViewCertificate = (moments: Moments) => {
+  const handleViewMoment = (moments: Moments) => {
     router.push(`/certificate/${moments.id}`)
   }
 
-  const handleGenerateCertificate = (moments: Moments) => {
+  const handleGenerateMoment = (moments: Moments) => {
     router.push(`/generate-nft/${moments.id}`)
   }
 
-  const handleShareCertificate = (moments: Moments) => {
+  const handleShareMoment = (moments: Moments) => {
     setSelectedMoments(moments)
     setIsShareDialogOpen(true)
   }
 
-  const handleEditProposal = (id: string) => {
+  const handleEditMoment = (id: string) => {
     router.push(`/edit/${id}`)
   }
 
-  const handlePreviewProposal = (id: string) => {
+  const handlePreviewMoment = (id: string) => {
     router.push(`/preview/${id}`)
   }
 
-  const handleSignProposal = (id: string) => {
+  const handleSignMoment = (id: string) => {
     router.push(`/sign-proposal/${id}`)
   }
 
@@ -164,7 +164,7 @@ export default function Dashboard() {
       navigator.clipboard.writeText(link)
       toast({
         title: "Link Copied",
-        description: "Certificate link has been copied to clipboard.",
+        description: "Moment link has been copied to clipboard.",
       })
     }
   }
@@ -218,7 +218,7 @@ export default function Dashboard() {
 
       <div className="flex justify-between items-center mb-4 sm:mb-6">
         <h2 className="text-xl sm:text-2xl font-semibold">My Moments</h2>
-        <Button onClick={handleCreateProposal} className="moments-button">+ Moment</Button>
+        <Button onClick={handleCreateMoment} className="moments-button">+ Moment</Button>
       </div>
 
       <div className="grid gap-4 sm:gap-6 md:grid-cols-1 lg:grid-cols-2">
@@ -240,10 +240,10 @@ export default function Dashboard() {
               </div>
               <div className="w-full sm:w-2/3">
                 <p className="text-sm">
-                  <strong>Spouse 1:</strong> {moments.spouse1Name} ({moments.spouse1Address})
+                  <strong>Participant 1:</strong> {moments.participant1Name} ({moments.participant1Address})
                 </p>
                 <p className="text-sm">
-                  <strong>Spouse 2:</strong> {moments.spouse2Name} ({moments.spouse2Address})
+                  <strong>Participant 2:</strong> {moments.participant2Name} ({moments.participant2Address})
                 </p>
                 <p className="text-sm">
                   <strong>Status:</strong> {moments.status}
@@ -253,15 +253,15 @@ export default function Dashboard() {
             <CardFooter className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {moments.status === "Created" && (
                 <>
-                  <Button onClick={() => handleEditProposal(moments.id)} variant="outline" className="w-full">
+                  <Button onClick={() => handleEditMoment(moments.id)} variant="outline" className="w-full moments-button-card">
                     <Edit className="mr-2 h-4 w-4" />
                     Edit
                   </Button>
-                  <Button onClick={() => handleSignProposal(moments.id)} className="w-full">
+                  <Button onClick={() => handleSignMoment(moments.id)} className="w-full moments-button-card">
                     <PenSquare className="mr-2 h-4 w-4" />
                     Sign
                   </Button>
-                  <Button onClick={() => handlePreviewProposal(moments.id)} variant="outline" className="w-full">
+                  <Button onClick={() => handlePreviewMoment(moments.id)} variant="outline" className="w-full moments-button-card">
                     <Eye className="mr-2 h-4 w-4" />
                     Preview
                   </Button>
@@ -269,11 +269,11 @@ export default function Dashboard() {
               )}
               {moments.status === "Proposed" && (
                 <>
-                  <Button onClick={() => handleSignProposal(moments.id)} className="w-full">
+                  <Button onClick={() => handleSignMoment(moments.id)} className="w-full moments-button-card">
                     <PenSquare className="mr-2 h-4 w-4" />
                     Sign
                   </Button>
-                  <Button onClick={() => handlePreviewProposal(moments.id)} variant="outline" className="w-full">
+                  <Button onClick={() => handlePreviewMoment(moments.id)} variant="outline" className="w-full moments-button-card">
                     <Eye className="mr-2 h-4 w-4" />
                     Preview
                   </Button>
@@ -282,15 +282,15 @@ export default function Dashboard() {
               )}
               {moments.status === "Signed" && (
                 <>
-                  <Button onClick={() => handleViewCertificate(moments)} className="w-full">
+                  <Button onClick={() => handleViewMoment(moments)} className="w-full moments-button-card">
                     <Eye className="mr-2 h-4 w-4" />
-                    View Certificate
+                    View Moment
                   </Button>
-                  <Button onClick={() => handleGenerateCertificate(moments)} className="w-full">
+                  <Button onClick={() => handleGenerateMoment(moments)} className="w-full moments-button-card">
                     <FileText className="mr-2 h-4 w-4" />
                     Generate NFT
                   </Button>
-                  <Button onClick={() => handleShareCertificate(moments)} variant="outline" className="w-full">
+                  <Button onClick={() => handleShareMoment(moments)} variant="outline" className="w-full moments-button-card">
                     <Share2 className="mr-2 h-4 w-4" />
                     Share
                   </Button>
@@ -298,7 +298,7 @@ export default function Dashboard() {
               )}
               {moments.status === "Rejected" && (
                 <>
-                  <Button onClick={() => handlePreviewProposal(moments.id)} variant="outline" className="w-full">
+                  <Button onClick={() => handlePreviewMoment(moments.id)} variant="outline" className="w-full moments-button-card">
                     <Eye className="mr-2 h-4 w-4" />
                     Preview
                   </Button>
@@ -314,7 +314,7 @@ export default function Dashboard() {
       <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Share Certificate</DialogTitle>
+            <DialogTitle>Share Moment</DialogTitle>
             <DialogDescription>Share your moments certificate with others</DialogDescription>
           </DialogHeader>
           {selectedMoments && (
