@@ -6,6 +6,8 @@ import { Footer } from "@/components/Footer"
 export default function Home() {
   return (
     <>
+      <main className="flex flex-col p-4">
+  
     <div className="flex flex-col h-[calc(100vh-180px)]">
       <main className="flex-grow flex items-center justify-center px-4 sm:px-6 lg:px-8 relative">
         <video 
@@ -42,6 +44,7 @@ export default function Home() {
         </div>
       </main>
     </div>
+    </main>
         <Footer />
 </>
   )

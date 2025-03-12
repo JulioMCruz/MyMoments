@@ -24,9 +24,6 @@ export default function Home() {
     }
   }, [isSDKLoaded]);  
   return (
-    <main className="flex flex-col p-4">
-      {/* <Demo /> */}
       <Landing />
-    </main>
   );
 }
