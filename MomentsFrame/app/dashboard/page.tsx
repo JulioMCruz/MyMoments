@@ -217,7 +217,7 @@ export default function Dashboard() {
       <UserInfoCard />
 
       <div className="flex justify-between items-center mb-4 sm:mb-6">
-        <h2 className="text-xl sm:text-2xl font-semibold">Your Moments</h2>
+        <h2 className="text-xl sm:text-2xl font-semibold">My Moments</h2>
         <Button onClick={handleCreateProposal} className="moments-button">+ Moment</Button>
       </div>
 
