@@ -21,7 +21,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { Footer } from "@/components/Footer"
 
 
-interface Marriage {
+interface Moments {
   id: string
   title: string
   spouse1Name: string
@@ -41,10 +41,10 @@ interface UserInfo {
 }
 
 export default function Dashboard() {
-  const [marriages, setMarriages] = useState<Marriage[]>([])
+  const [momentss, setMomentss] = useState<Moments[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [selectedMarriage, setSelectedMarriage] = useState<Marriage | null>(null)
+  const [selectedMoments, setSelectedMoments] = useState<Moments | null>(null)
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false)
   const [user, setUser] = useState<UserInfo>({
     name: "John Doe",
@@ -56,11 +56,11 @@ export default function Dashboard() {
   const { toast } = useToast()
 
   useEffect(() => {
-    const fetchMarriages = async () => {
+    const fetchMomentss = async () => {
       try {
         // TODO: Replace with actual API call
         await new Promise((resolve) => setTimeout(resolve, 1000)) // Simulate API delay
-        const mockMarriages: Marriage[] = [
+        const mockMomentss: Moments[] = [
           {
             id: "1",
             title: "Alice & Bob's Union",
@@ -117,32 +117,32 @@ export default function Dashboard() {
             imageUrl: "/placeholder.png?height=200&width=300",
           },
         ]
-        setMarriages(mockMarriages)
+        setMomentss(mockMomentss)
         setError(null)
       } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred while fetching marriages")
+        setError(err instanceof Error ? err.message : "An error occurred while fetching momentss")
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchMarriages()
+    fetchMomentss()
   }, [])
 
   const handleCreateProposal = () => {
     router.push("/propose")
   }
 
-  const handleViewCertificate = (marriage: Marriage) => {
-    router.push(`/certificate/${marriage.id}`)
+  const handleViewCertificate = (moments: Moments) => {
+    router.push(`/certificate/${moments.id}`)
   }
 
-  const handleGenerateCertificate = (marriage: Marriage) => {
-    router.push(`/generate-nft/${marriage.id}`)
+  const handleGenerateCertificate = (moments: Moments) => {
+    router.push(`/generate-nft/${moments.id}`)
   }
 
-  const handleShareCertificate = (marriage: Marriage) => {
-    setSelectedMarriage(marriage)
+  const handleShareCertificate = (moments: Moments) => {
+    setSelectedMoments(moments)
     setIsShareDialogOpen(true)
   }
 
@@ -159,8 +159,8 @@ export default function Dashboard() {
   }
 
   const handleCopyLink = () => {
-    if (selectedMarriage) {
-      const link = `${window.location.origin}/certificate/${selectedMarriage.id}`
+    if (selectedMoments) {
+      const link = `${window.location.origin}/certificate/${selectedMoments.id}`
       navigator.clipboard.writeText(link)
       toast({
         title: "Link Copied",
@@ -170,18 +170,18 @@ export default function Dashboard() {
   }
 
   const handleShareTwitter = () => {
-    if (selectedMarriage) {
-      const text = `Check out our blockchain marriage certificate: ${selectedMarriage.title}`
-      const url = `${window.location.origin}/certificate/${selectedMarriage.id}`
+    if (selectedMoments) {
+      const text = `Check out our blockchain moments certificate: ${selectedMoments.title}`
+      const url = `${window.location.origin}/certificate/${selectedMoments.id}`
       const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`
       window.open(twitterUrl, "_blank")
     }
   }
 
   const handleShareWarpcast = () => {
-    if (selectedMarriage) {
-      const text = `Check out our blockchain marriage certificate: ${selectedMarriage.title}`
-      const url = `${window.location.origin}/certificate/${selectedMarriage.id}`
+    if (selectedMoments) {
+      const text = `Check out our blockchain moments certificate: ${selectedMoments.title}`
+      const url = `${window.location.origin}/certificate/${selectedMoments.id}`
       const warpcastUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(url)}`
       window.open(warpcastUrl, "_blank")
     }
@@ -197,7 +197,7 @@ export default function Dashboard() {
   }
 
   if (isLoading) {
-    return <div className="text-center mt-8">Loading marriages...</div>
+    return <div className="text-center mt-8">Loading moments...</div>
   }
 
   if (error) {
@@ -222,17 +222,17 @@ export default function Dashboard() {
       </div>
 
       <div className="grid gap-4 sm:gap-6 md:grid-cols-1 lg:grid-cols-2">
-        {marriages.map((marriage) => (
-          <Card key={marriage.id} className="w-full">
+        {momentss.map((moments) => (
+          <Card key={moments.id} className="w-full">
             <CardHeader>
-              <CardTitle className="text-lg sm:text-xl">{marriage.title}</CardTitle>
-              <CardDescription>{marriage.date}</CardDescription>
+              <CardTitle className="text-lg sm:text-xl">{moments.title}</CardTitle>
+              <CardDescription>{moments.date}</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col sm:flex-row gap-4">
               <div className="w-full sm:w-1/3">
                 <Image
-                  src={marriage.imageUrl || "/placeholder.png"}
-                  alt={marriage.title}
+                  src={moments.imageUrl || "/placeholder.png"}
+                  alt={moments.title}
                   width={300}
                   height={200}
                   className="rounded-lg object-cover w-full h-auto"
@@ -240,65 +240,65 @@ export default function Dashboard() {
               </div>
               <div className="w-full sm:w-2/3">
                 <p className="text-sm">
-                  <strong>Spouse 1:</strong> {marriage.spouse1Name} ({marriage.spouse1Address})
+                  <strong>Spouse 1:</strong> {moments.spouse1Name} ({moments.spouse1Address})
                 </p>
                 <p className="text-sm">
-                  <strong>Spouse 2:</strong> {marriage.spouse2Name} ({marriage.spouse2Address})
+                  <strong>Spouse 2:</strong> {moments.spouse2Name} ({moments.spouse2Address})
                 </p>
                 <p className="text-sm">
-                  <strong>Status:</strong> {marriage.status}
+                  <strong>Status:</strong> {moments.status}
                 </p>
               </div>
             </CardContent>
             <CardFooter className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              {marriage.status === "Created" && (
+              {moments.status === "Created" && (
                 <>
-                  <Button onClick={() => handleEditProposal(marriage.id)} variant="outline" className="w-full">
+                  <Button onClick={() => handleEditProposal(moments.id)} variant="outline" className="w-full">
                     <Edit className="mr-2 h-4 w-4" />
                     Edit
                   </Button>
-                  <Button onClick={() => handleSignProposal(marriage.id)} className="w-full">
+                  <Button onClick={() => handleSignProposal(moments.id)} className="w-full">
                     <PenSquare className="mr-2 h-4 w-4" />
                     Sign
                   </Button>
-                  <Button onClick={() => handlePreviewProposal(marriage.id)} variant="outline" className="w-full">
+                  <Button onClick={() => handlePreviewProposal(moments.id)} variant="outline" className="w-full">
                     <Eye className="mr-2 h-4 w-4" />
                     Preview
                   </Button>
                 </>
               )}
-              {marriage.status === "Proposed" && (
+              {moments.status === "Proposed" && (
                 <>
-                  <Button onClick={() => handleSignProposal(marriage.id)} className="w-full">
+                  <Button onClick={() => handleSignProposal(moments.id)} className="w-full">
                     <PenSquare className="mr-2 h-4 w-4" />
                     Sign
                   </Button>
-                  <Button onClick={() => handlePreviewProposal(marriage.id)} variant="outline" className="w-full">
+                  <Button onClick={() => handlePreviewProposal(moments.id)} variant="outline" className="w-full">
                     <Eye className="mr-2 h-4 w-4" />
                     Preview
                   </Button>
                   <div className="hidden sm:block"></div>
                 </>
               )}
-              {marriage.status === "Signed" && (
+              {moments.status === "Signed" && (
                 <>
-                  <Button onClick={() => handleViewCertificate(marriage)} className="w-full">
+                  <Button onClick={() => handleViewCertificate(moments)} className="w-full">
                     <Eye className="mr-2 h-4 w-4" />
                     View Certificate
                   </Button>
-                  <Button onClick={() => handleGenerateCertificate(marriage)} className="w-full">
+                  <Button onClick={() => handleGenerateCertificate(moments)} className="w-full">
                     <FileText className="mr-2 h-4 w-4" />
                     Generate NFT
                   </Button>
-                  <Button onClick={() => handleShareCertificate(marriage)} variant="outline" className="w-full">
+                  <Button onClick={() => handleShareCertificate(moments)} variant="outline" className="w-full">
                     <Share2 className="mr-2 h-4 w-4" />
                     Share
                   </Button>
                 </>
               )}
-              {marriage.status === "Rejected" && (
+              {moments.status === "Rejected" && (
                 <>
-                  <Button onClick={() => handlePreviewProposal(marriage.id)} variant="outline" className="w-full">
+                  <Button onClick={() => handlePreviewProposal(moments.id)} variant="outline" className="w-full">
                     <Eye className="mr-2 h-4 w-4" />
                     Preview
                   </Button>
@@ -315,12 +315,12 @@ export default function Dashboard() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Share Certificate</DialogTitle>
-            <DialogDescription>Share your marriage certificate with others</DialogDescription>
+            <DialogDescription>Share your moments certificate with others</DialogDescription>
           </DialogHeader>
-          {selectedMarriage && (
+          {selectedMoments && (
             <div className="grid gap-4 py-4">
               <div className="flex justify-center">
-                <QRCodeSVG value={`${window.location.origin}/certificate/${selectedMarriage.id}`} size={200} />
+                <QRCodeSVG value={`${window.location.origin}/certificate/${selectedMoments.id}`} size={200} />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Button onClick={handleShareTwitter} variant="outline" className="w-full">
@@ -334,7 +334,7 @@ export default function Dashboard() {
               <div className="flex items-center space-x-2">
                 <Input
                   id="link"
-                  value={`${window.location.origin}/certificate/${selectedMarriage.id}`}
+                  value={`${window.location.origin}/certificate/${selectedMoments.id}`}
                   readOnly
                   className="flex-1"
                 />
