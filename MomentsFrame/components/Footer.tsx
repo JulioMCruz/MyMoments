@@ -3,7 +3,7 @@ import { Facebook, Twitter, Instagram, Linkedin, Github } from "lucide-react"
 
 export function Footer() {
   return (
-    <footer className="w-full py-6 px-4 sm:px-6 header-footer-gradient text-white shadow-md mt-auto bg-[#6d63fe]">
+    <footer className="w-full py-6 px-4 sm:px-6 header-footer-gradient text-white shadow-md mt-auto bg-gradient-to-r from-[#6d63fe] to-purple-500">
       <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center">
         <div className="mb-4 sm:mb-0">
           <p className="text-sm">&copy; 2025 Moments. All rights reserved.</p>

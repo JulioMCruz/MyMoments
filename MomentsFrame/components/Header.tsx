@@ -28,7 +28,7 @@ export default function Header() {
   }
 
   return (
-    <header className="w-full py-4 px-4 sm:px-6 header-footer-gradient text-white shadow-md bg-[#6d63fe]">
+    <header className="w-full py-4 px-4 sm:px-6 header-footer-gradient text-white shadow-md bg-gradient-to-r from-[#6d63fe] to-purple-500">
       <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center">
         <Link href="/" className="flex items-center text-2xl font-bold sm:mb-0">
           <Image src="/assets/momentsLogo.png" alt="Moments Logo" width={64} height={64} className="mr-2" />

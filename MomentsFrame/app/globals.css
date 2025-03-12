@@ -129,6 +129,14 @@
   @apply w-full max-w-[180px] bg-gradient-to-r from-[#6d63fe] to-purple-500 active:scale-[0.98] transition-transform text-white text-lg py-6 rounded-xl shadow-xl font-bold;
 }
 
+.moments-button-card {
+  @apply w-full bg-gradient-to-r from-[#6d63fe] to-purple-500 active:scale-[0.98] transition-transform text-white text-lg py-6 rounded-xl shadow-xl font-bold;
+}
+
+.moments-button-card-outline {
+  @apply w-full active:scale-[0.98] transition-transform text-black text-lg py-6 rounded-xl shadow-xl;
+}
+
 .gradient-text {
   @apply bg-clip-text text-transparent bg-gradient-to-r;
 }
