@@ -3,6 +3,7 @@ import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
+import FeaturedMoments from "@/components/featured-moments"
 
 export default function Home() {
   return (
@@ -19,7 +20,7 @@ export default function Home() {
                 muted 
                 playsInline
                 className="w-full h-full object-cover"
-                poster="/assets/moments-poster.jpg"
+                poster="/assets/moments-poster.png"
                 preload="auto"
               >
                 <source 
@@ -53,6 +54,8 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        <FeaturedMoments />
 
         <section className="py-16 px-6 bg-white">
           <div className="max-w-6xl mx-auto">
