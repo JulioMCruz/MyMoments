@@ -12,14 +12,30 @@ export default function Home() {
       <main className="flex-1">
         <section className="relative w-full">
           <div className="relative">
-            <Image
-              src="/placeholder.svg?height=600&width=800"
-              alt="Friends celebrating together"
-              width={800}
-              height={600}
-              className="w-full h-[70vh] object-cover"
-              priority
-            />
+            <div className="relative w-full h-[70vh]">
+              <video 
+                autoPlay 
+                loop 
+                muted 
+                playsInline
+                className="w-full h-full object-cover"
+                poster="/assets/moments-poster.jpg"
+                preload="auto"
+              >
+                <source 
+                  src="/assets/moments.mp4" 
+                  type="video/mp4" 
+                />
+                <Image
+                  src="/assets/moments-poster.png"
+                  alt="Moments video fallback"
+                  fill
+                  className="object-cover"
+                  priority
+                />
+              </video>
+            </div>
+
             <div className="absolute inset-0 bg-black/30" />
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
               <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
