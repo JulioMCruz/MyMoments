@@ -1,4 +1,4 @@
-import Header from "@/components/dashboard/header"
+import Header from "@/components/header"
 import ProfileCard from "@/components/dashboard/profile-card"
 import MomentsList from "@/components/dashboard/moments-list"
 import CreateMomentCard from "@/components/dashboard/create-moment-card"
