@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Search } from "lucide-react"
 import Header from "@/components/header"
@@ -23,10 +23,37 @@ const mockImages = Array.from({ length: 18 }, (_, i) => ({
   price: (Math.random() * 0.2 + 0.05).toFixed(3),
 }))
 
+// Move the categories/badges data outside the component to ensure consistency
+const MOMENT_CATEGORIES = [
+  { id: 1, label: "love", color: "bg-purple-500" },
+  { id: 2, label: "celebration", color: "bg-pink-500" },
+  // ... other categories
+] as const
+
 export default function DiscoverPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedImage, setSelectedImage] = useState<number | null>(null)
   const [isMinting, setIsMinting] = useState(false)
+
+  // Handle highlight parameter from URL
+  useEffect(() => {
+    const { searchParams } = new URL(window.location.href)
+    const highlightId = searchParams.get("highlight")
+
+    if (highlightId) {
+      const id = Number.parseInt(highlightId)
+      const foundImage = mockImages.find((img) => img.id === id)
+      if (foundImage) {
+        setSelectedImage(id)
+      }
+    }
+  }, [])
+
+  const filteredImages = mockImages.filter(
+    (image) =>
+      image.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      image.description.toLowerCase().includes(searchQuery.toLowerCase()),
+  )
 
   const handleMint = async () => {
     setIsMinting(true)
@@ -35,12 +62,6 @@ export default function DiscoverPage() {
     setIsMinting(false)
     setSelectedImage(null)
   }
-
-  const filteredImages = mockImages.filter(
-    (image) =>
-      image.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      image.description.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
 
   // Get the selected image data
   const selectedImageData = selectedImage !== null ? mockImages[selectedImage - 1] : null
@@ -87,7 +108,9 @@ export default function DiscoverPage() {
                 <h3 className="font-bold text-lg mb-2">{image.title}</h3>
                 <p className="text-gray-600 text-sm mb-3">{truncateText(image.description, 150)}</p>
                 <div className="flex justify-between items-center">
-                  <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200">{image.tags}</Badge>
+                  <Badge className={`${MOMENT_CATEGORIES.find(c => c.label === image.tags)?.color} text-white`}>
+                    {image.tags}
+                  </Badge>
                   <span className="text-sm text-gray-500">{image.participants} participants</span>
                 </div>
               </div>
