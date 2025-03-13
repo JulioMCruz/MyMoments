@@ -107,7 +107,7 @@ export default function Home() {
               </div>
               <div className="md:w-1/2">
                 <Image
-                  src="/placeholder.svg?height=400&width=500"
+                  src="/assets/moments-poster.png"
                   alt="Collection of moments"
                   width={500}
                   height={400}
