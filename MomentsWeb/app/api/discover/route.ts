@@ -1,43 +1,72 @@
 import { NextResponse } from "next/server"
-
-// In a real app, this would come from a database or API
-const mockMoments = Array.from({ length: 18 }, (_, i) => ({
-  id: i + 1,
-  title: `Moment ${i + 1}`,
-  description: `This is a beautiful moment captured in time. It represents a special occasion where people came together to celebrate life, love, and friendship. The memory of this day will be cherished forever as it marks an important milestone in the journey of those involved.`,
-  creator: `Creator${i + 1}.eth`,
-  date: new Date(2023, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1),
-  participants: Math.floor(Math.random() * 5) + 1,
-  imageUrl: `/placeholder.svg?height=400&width=400&text=Moment${i + 1}`,
-  tags: ["love", "friendship", "celebration"][Math.floor(Math.random() * 3)],
-  price: (Math.random() * 0.2 + 0.05).toFixed(3),
-}))
+import { prisma } from "@/lib/prisma"
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const query = searchParams.get("q")
 
-  // Filter moments based on search query
-  const filteredMoments = query
-    ? mockMoments.filter(
-        (moment) =>
-          moment.title.toLowerCase().includes(query.toLowerCase()) ||
-          moment.description.toLowerCase().includes(query.toLowerCase()) ||
-          moment.tags.includes(query.toLowerCase()),
-      )
-    : mockMoments
+  try {
+    // Fetch published moments with non-private visibility
+    const moments = await prisma.moment.findMany({
+      where: {
+        status: "published",
+        publishInfo: {
+          isPublished: true,
+          isPrivate: false
+        },
+        // Add search query filtering if a query is provided
+        ...(query ? {
+          OR: [
+            { title: { contains: query, mode: 'insensitive' } },
+            { description: { contains: query, mode: 'insensitive' } }
+          ]
+        } : {})
+      },
+      include: {
+        creator: true,
+        participants: {
+          include: {
+            user: true
+          }
+        },
+        publishInfo: true
+      },
+      orderBy: {
+        updatedAt: 'desc'
+      }
+    })
 
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 500))
+    // Transform the moments to include participant count and other necessary information
+    const formattedMoments = moments.map(moment => {
+      return {
+        id: moment.id,
+        title: moment.title,
+        description: moment.description,
+        imageUrl: moment.imageUrl,
+        creatorAddress: moment.creator.walletAddress,
+        date: moment.createdAt,
+        participants: moment.participants.length + 1, // +1 for the creator
+        price: moment.publishInfo?.price || 0,
+        pricingType: moment.publishInfo?.pricingType || "free",
+        status: moment.status
+      }
+    })
 
-  return NextResponse.json(filteredMoments)
+    return NextResponse.json(formattedMoments)
+  } catch (error) {
+    console.error("Error fetching discover moments:", error)
+    return NextResponse.json(
+      { error: "Failed to fetch moments" },
+      { status: 500 }
+    )
+  }
 }
 
 export async function POST(request: Request) {
   try {
     const { momentId } = await request.json()
 
-    // Simulate minting process
+    // Simulate minting process - this would be replaced with actual minting logic
     await new Promise((resolve) => setTimeout(resolve, 2000))
 
     return NextResponse.json({
