@@ -18,7 +18,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Check, Copy } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { logo } from "@/app/content/momentsAppLogo"
-import { getUserVerificationStatus, verifyUser } from "@/services/user"
+import { getUserVerificationStatus, verifyUser, getUserByWalletAddress } from "@/services/user"
 
 import {
   Address,
@@ -61,23 +61,46 @@ export default function ProfileCard({ address }: ProfileCardProps) {
   const [selfApp, setSelfApp] = useState<any>(null)
   const [isClient, setIsClient] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [userId, setUserId] = useState<string>("")
 
   // Set isClient to true once component mounts
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // Initialize selfApp only on client
+  // Fetch user information from database
   useEffect(() => {
-    if (isClient && SelfAppBuilder) {
+    async function fetchUserInfo() {
+      if (!address) return;
+      
       try {
-        const userId = uuidv4();
+        const userInfo = await getUserByWalletAddress(address);
+        setUserId(userInfo.id); // Set the user ID from the database
+        setIsVerified(userInfo.isVerified); // Set verification status
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error fetching user information:", error);
+        // Generate a fallback ID if needed
+        const fallbackId = uuidv4();
+        setUserId(fallbackId);
+        setIsLoading(false);
+      }
+    }
+    
+    fetchUserInfo();
+  }, [address]);
+
+  // Initialize selfApp only on client and after userId is set
+  useEffect(() => {
+    if (isClient && SelfAppBuilder && userId) {
+      try {
+        console.log("Initializing Self with userId:", userId);
         const app = new SelfAppBuilder({
           appName: "My Moments",
           scope: process.env.NEXT_PUBLIC_SELF_SCOPE, 
           endpoint: process.env.NEXT_PUBLIC_SELF_ENDPOINT,
           logoBase64: logo,
-          userId,
+          userId, // Use the user ID from the database
           disclosures: {
             name: true,
             passport_number: true,
@@ -89,28 +112,7 @@ export default function ProfileCard({ address }: ProfileCardProps) {
         console.error("Error creating SelfAppBuilder:", error);
       }
     }
-  }, [isClient]);
-  
-  // Fetch verification status from database
-  useEffect(() => {
-    async function fetchVerificationStatus() {
-      if (!address) return;
-      
-      setIsLoading(true);
-      try {
-        const { isVerified: verificationStatus } = await getUserVerificationStatus(address);
-        setIsVerified(verificationStatus);
-      } catch (error) {
-        console.error("Error fetching verification status:", error);
-        // Fallback to unverified status on error
-        setIsVerified(false);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    
-    fetchVerificationStatus();
-  }, [address]);
+  }, [isClient, userId]);
 
   if (!address) {
     return (
