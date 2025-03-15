@@ -1,10 +1,11 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
+import Link from "next/link"
 import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
-import { Share2, QrCode, RefreshCw } from "lucide-react"
+import { Share2, QrCode, RefreshCw, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -19,6 +20,7 @@ import { Check, Copy } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { logo } from "@/app/content/momentsAppLogo"
 import { getUserVerificationStatus, verifyUser, getUserByWalletAddress } from "@/services/user"
+import { useUser } from "@/context/UserContext"
 
 import {
   Address,
@@ -55,6 +57,7 @@ interface ProfileCardProps {
 }
 
 export default function ProfileCard({ address }: ProfileCardProps) {
+  const { user, setUser } = useUser();
   const [isVerified, setIsVerified] = useState(false)
   const [showVerifyDialog, setShowVerifyDialog] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -139,7 +142,17 @@ export default function ProfileCard({ address }: ProfileCardProps) {
         if (result.success) {
           // Fetch the latest user data from the database to get the current verification status
           const userInfo = await getUserByWalletAddress(address)
+          
+          // Update component state
           setIsVerified(userInfo.isVerified)
+          
+          // Update global UserContext so other components can access updated status
+          if (user && userInfo.isVerified !== user.isVerified) {
+            setUser({
+              ...user,
+              isVerified: userInfo.isVerified
+            })
+          }
           
           toast({
             title: "Verification process completed",
@@ -160,7 +173,17 @@ export default function ProfileCard({ address }: ProfileCardProps) {
         // Even if verification API call fails, try to fetch the latest status
         try {
           const userInfo = await getUserByWalletAddress(address)
+          
+          // Update component state
           setIsVerified(userInfo.isVerified)
+          
+          // Update global UserContext
+          if (user && userInfo.isVerified !== user.isVerified) {
+            setUser({
+              ...user,
+              isVerified: userInfo.isVerified
+            })
+          }
         } catch (fetchError) {
           console.error("Error fetching user status:", fetchError)
           // Fallback to showing a generic error
@@ -198,7 +221,17 @@ export default function ProfileCard({ address }: ProfileCardProps) {
     setIsRefreshing(true)
     try {
       const userInfo = await getUserByWalletAddress(address)
+      
+      // Update component state
       setIsVerified(userInfo.isVerified)
+      
+      // Update global UserContext
+      if (user && userInfo.isVerified !== user.isVerified) {
+        setUser({
+          ...user,
+          isVerified: userInfo.isVerified
+        })
+      }
       
       toast({
         title: "Status refreshed",
@@ -218,88 +251,130 @@ export default function ProfileCard({ address }: ProfileCardProps) {
     }
   }
 
+  // Create Moment Card Component integrated directly with ProfileCard
+  const CreateMomentCard = () => {
+    const isDisabled = !isVerified
+    
+    return (
+      <div className="mt-6">
+        {isDisabled ? (
+          <Card className="bg-pink-50">
+            <div className="p-6 flex items-center space-x-4">
+              <div className="w-16 h-16 rounded-full bg-gray-400 flex items-center justify-center flex-shrink-0">
+                <Plus className="h-8 w-8 text-white opacity-50" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-700">Create New Moment</h3>
+                <p className="text-gray-600">In order to create a moment, you need to be verified</p>
+              </div>
+            </div>
+          </Card>
+        ) : (
+          <Link href="/create-moment">
+            <Card className="bg-pink-50 hover:bg-pink-100/80 transition-colors">
+              <div className="p-6 flex items-center space-x-4">
+                <div className="w-16 h-16 rounded-full bg-pink-400 flex items-center justify-center flex-shrink-0">
+                  <Plus className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">Create New Moment</h3>
+                  <p className="text-gray-600">Capture and verify your special experiences</p>
+                </div>
+              </div>
+            </Card>
+          </Link>
+        )}
+      </div>
+    )
+  }
+
   return (
     <>
-      <Card className="overflow-hidden">
-        <div className="h-24 bg-gradient-to-r from-pink-300 to-purple-500" />
-        <div className="p-6 pt-0 relative">
-          <div className="absolute right-6 top-2">
-            {/* <Button variant="ghost" size="icon" className="rounded-full bg-white/80">
-              <Share2 className="h-4 w-4" />
-              <span className="sr-only">Share profile</span>
-            </Button> */}
-          </div>
+      <div className="space-y-6">
+        <Card className="overflow-hidden">
+          <div className="h-24 bg-gradient-to-r from-pink-300 to-purple-500" />
+          <div className="p-6 pt-0 relative">
+            <div className="absolute right-6 top-2">
+              {/* <Button variant="ghost" size="icon" className="rounded-full bg-white/80">
+                <Share2 className="h-4 w-4" />
+                <span className="sr-only">Share profile</span>
+              </Button> */}
+            </div>
 
-          <div className="relative -mt-12 mb-0">
-            <Identity hasCopyAddressOnClick className="h-28 w-28 rounded-full">
-                <Avatar className="h-28 w-28 -ml-[16px] -mt-[5px]" address={`${address}` as `0x${string}`} />
-            </Identity>
-
-          </div>
-
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 flex-wrap">
-              <Identity hasCopyAddressOnClick className="h-12 w-72 bg-white text-black rounded-lg p-2">
-                <Name  address={`${address}` as `0x${string}`}/>
-                <Address address={`${address}` as `0x${string}`}/>
+            <div className="relative -mt-12 mb-0">
+              <Identity hasCopyAddressOnClick className="h-28 w-28 rounded-full">
+                  <Avatar className="h-28 w-28 -ml-[16px] -mt-[5px]" address={`${address}` as `0x${string}`} />
               </Identity>
-              <div className="flex items-center gap-2">
-                {isLoading ? (
-                  <Badge variant="secondary" className="bg-gray-100 text-gray-700">
-                    Checking status...
-                  </Badge>
-                ) : isVerified ? (
-                  <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-200">
-                    Verified
-                  </Badge>
-                ) : (
-                  <>
-                    <Badge variant="secondary" className="bg-red-100 text-red-700 hover:bg-red-200">
-                      Not Verified
-                    </Badge>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 text-xs border-purple-200 text-purple-700 hover:bg-purple-50"
-                      onClick={handleVerifyNow}
-                    >
-                      Verify Now
-                    </Button>
-                  </>
-                )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0"
-                  disabled={isRefreshing}
-                  onClick={refreshVerificationStatus}
-                  title="Refresh verification status"
-                >
-                  <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                  <span className="sr-only">Refresh verification status</span>
-                </Button>
-              </div>
+
             </div>
 
-            <p className="text-sm text-gray-500">Joined March 2023</p>
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Identity hasCopyAddressOnClick className="h-12 w-72 bg-white text-black rounded-lg p-2">
+                  <Name  address={`${address}` as `0x${string}`}/>
+                  <Address address={`${address}` as `0x${string}`}/>
+                </Identity>
+                <div className="flex items-center gap-2">
+                  {isLoading ? (
+                    <Badge variant="secondary" className="bg-gray-100 text-gray-700">
+                      Checking status...
+                    </Badge>
+                  ) : isVerified ? (
+                    <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-200">
+                      Verified
+                    </Badge>
+                  ) : (
+                    <>
+                      <Badge variant="secondary" className="bg-red-100 text-red-700 hover:bg-red-200">
+                        Not Verified
+                      </Badge>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs border-purple-200 text-purple-700 hover:bg-purple-50"
+                        onClick={handleVerifyNow}
+                      >
+                        Verify Now
+                      </Button>
+                    </>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    disabled={isRefreshing}
+                    onClick={refreshVerificationStatus}
+                    title="Refresh verification status"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                    <span className="sr-only">Refresh verification status</span>
+                  </Button>
+                </div>
+              </div>
 
-            <div className="grid grid-cols-3 gap-4 pt-4 border-t">
-              <div className="text-center">
-                <p className="text-2xl font-bold">6</p>
-                <p className="text-sm text-gray-500">Active Moments</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold">12</p>
-                <p className="text-sm text-gray-500">Completed</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold">3</p>
-                <p className="text-sm text-gray-500">NFTs Minted</p>
+              <p className="text-sm text-gray-500">Joined March 2023</p>
+
+              <div className="grid grid-cols-3 gap-4 pt-4 border-t">
+                <div className="text-center">
+                  <p className="text-2xl font-bold">6</p>
+                  <p className="text-sm text-gray-500">Active Moments</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold">12</p>
+                  <p className="text-sm text-gray-500">Completed</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold">3</p>
+                  <p className="text-sm text-gray-500">NFTs Minted</p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+        
+        {/* Integrated Create Moment Card - shares state with ProfileCard */}
+        <CreateMomentCard />
+      </div>
 
       {/* Verification Dialog */}
       <Dialog open={showVerifyDialog} onOpenChange={setShowVerifyDialog}>
