@@ -30,6 +30,7 @@ model Moment {
   nftTokenId   String?
   creator      User                @relation("CreatedMoments", fields: [creatorId], references: [id])
   participants MomentParticipant[]
+  publishInfo  MomentPublish?
 }
 
 model MomentParticipant {
@@ -44,5 +45,20 @@ model MomentParticipant {
 
   @@unique([userId, momentId])
   @@index([userId])
+  @@index([momentId])
+}
+
+model MomentPublish {
+  id             String   @id @default(uuid())
+  momentId       String   @unique
+  isPublished    Boolean  @default(false)
+  isPrivate      Boolean  @default(false)
+  allowedWallets String[] @default([])
+  pricingType    String   @default("free")
+  price          Float    @default(0)
+  publishedAt    DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  moment         Moment   @relation(fields: [momentId], references: [id])
+
   @@index([momentId])
 }

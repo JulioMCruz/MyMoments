@@ -36,12 +36,18 @@ export async function GET(request: Request) {
             include: {
               user: true
             }
-          }
+          },
+          publishInfo: true  // Include publishInfo relation
         }
       })
 
       // Transform moments to include calculated status
       const transformedMoments = moments.map(moment => {
+        // If the status is already "published", keep it
+        if (moment.status.toLowerCase() === "published") {
+          return moment;
+        }
+        
         // If the database still has "proposed" status, convert it to "created"
         let currentStatus = moment.status === "proposed" ? "created" : moment.status.toLowerCase()
         
@@ -74,11 +80,17 @@ export async function GET(request: Request) {
             include: {
               user: true
             }
-          }
+          },
+          publishInfo: true  // Include publishInfo relation
         }
       })
 
       const transformedMoments = moments.map(moment => {
+        // If the status is already "published", keep it
+        if (moment.status.toLowerCase() === "published") {
+          return moment;
+        }
+        
         // If the database still has "proposed" status, convert it to "created"
         let currentStatus = moment.status === "proposed" ? "created" : moment.status.toLowerCase()
         
@@ -184,7 +196,8 @@ export async function POST(request: Request) {
           include: {
             user: true
           }
-        }
+        },
+        publishInfo: true  // Include publishInfo relation
       }
     })
 
