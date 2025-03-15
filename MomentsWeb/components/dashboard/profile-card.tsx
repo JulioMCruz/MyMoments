@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
@@ -17,9 +17,6 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Check, Copy } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
-
-import SelfQRcodeWrapper, { SelfAppBuilder, SelfQRcode } from '@selfxyz/qrcode';
-import { v4 as uuidv4 } from 'uuid';
 import { logo } from "@/app/content/momentsAppLogo"
 
 import {
@@ -30,41 +27,75 @@ import {
   EthBalance, 
 } from '@coinbase/onchainkit/identity';
 
+// Don't import QR code components on server
+let SelfQRcodeWrapper: any = null;
+let SelfAppBuilder: any = null;
+let uuidv4: () => string = () => "";
+
+// Only load these modules on the client side
+if (typeof window !== 'undefined') {
+  // Dynamic imports
+  import('@selfxyz/qrcode')
+    .then((module) => {
+      SelfQRcodeWrapper = module.default;
+      SelfAppBuilder = module.SelfAppBuilder;
+    })
+    .catch(err => console.error("Error loading QR code module:", err));
+  
+  import('uuid')
+    .then((module) => {
+      uuidv4 = module.v4;
+    })
+    .catch(err => console.error("Error loading uuid module:", err));
+}
+
 interface ProfileCardProps {
   address: `0x${string}` | undefined
 }
 
 export default function ProfileCard({ address }: ProfileCardProps) {
-
-
   const [isVerified, setIsVerified] = useState(false)
   const [showVerifyDialog, setShowVerifyDialog] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [selfApp, setSelfApp] = useState<any>(null)
+  const [isClient, setIsClient] = useState(false)
 
-  const userId = uuidv4();
+  // Set isClient to true once component mounts
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Initialize selfApp only on client
+  useEffect(() => {
+    if (isClient && SelfAppBuilder) {
+      try {
+        const userId = uuidv4();
+        const app = new SelfAppBuilder({
+          appName: "My Moments",
+          scope: process.env.NEXT_PUBLIC_SELF_SCOPE, 
+          endpoint: process.env.NEXT_PUBLIC_SELF_ENDPOINT,
+          logoBase64: logo,
+          userId,
+          disclosures: {
+            name: true,
+            passport_number: true,
+          },
+        }).build();
+        
+        setSelfApp(app);
+      } catch (error) {
+        console.error("Error creating SelfAppBuilder:", error);
+      }
+    }
+  }, [isClient]);
   
-  if (!userId) {
+  if (!address) {
     return (
       <div className="p-4 border rounded-lg bg-red-50">
         <p className="text-red-600">Error: No wallet address found. Please connect your wallet.</p>
       </div>
     )
   }
-
-  const selfApp = new SelfAppBuilder({
-    appName: "My Moments",
-    scope: process.env.NEXT_PUBLIC_SELF_SCOPE, 
-    endpoint: process.env.NEXT_PUBLIC_SELF_ENDPOINT,
-    logoBase64: logo, // Optional
-    userId ,
-    // Optional disclosure requirements
-    disclosures: {
-      // DG1 disclosures
-      name: true,
-      passport_number: true,
-      // Custom verification rules
-    },
-  }).build();
 
   const handleVerifyNow = () => {
     setShowVerifyDialog(true)
@@ -82,7 +113,7 @@ export default function ProfileCard({ address }: ProfileCardProps) {
   }, [address])
 
   const copyToClipboard = () => {
-    if (!address) return
+    if (!address || typeof navigator === 'undefined') return
     navigator.clipboard.writeText(address)
     setCopied(true)
     toast({
@@ -193,16 +224,19 @@ export default function ProfileCard({ address }: ProfileCardProps) {
           <div className="flex flex-col items-center justify-center py-6">
             <div className="relative w-64 h-64 border border-gray-200 rounded-lg p-4 bg-white">
               <div className="absolute inset-0 flex items-center justify-center">
-                {/* <QrCode className="w-8 h-8 text-gray-300" /> */}
-                <SelfQRcodeWrapper
-                selfApp={selfApp}
-                onSuccess={() => {
-                  console.log('Verification successful');
-                  // Perform actions after successful verification
-                }}
-                darkMode={false} // Optional: set to true for dark mode
-                size={200} // Optional: customize QR code size (default: 300)
-              />              
+                {isClient && selfApp && SelfQRcodeWrapper ? (
+                  <SelfQRcodeWrapper
+                    selfApp={selfApp}
+                    onSuccess={() => {
+                      console.log('Verification successful');
+                      // Perform actions after successful verification
+                    }}
+                    darkMode={false}
+                    size={200}
+                  />
+                ) : (
+                  <div className="w-48 h-48 bg-gray-100 animate-pulse rounded-lg"></div>
+                )}
               </div>
             </div>
             <p className="mt-4 text-sm text-gray-500 text-center">

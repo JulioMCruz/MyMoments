@@ -37,14 +37,16 @@ export default function DiscoverPage() {
 
   // Handle highlight parameter from URL
   useEffect(() => {
-    const { searchParams } = new URL(window.location.href)
-    const highlightId = searchParams.get("highlight")
+    if (typeof window !== 'undefined') {
+      const { searchParams } = new URL(window.location.href)
+      const highlightId = searchParams.get("highlight")
 
-    if (highlightId) {
-      const id = Number.parseInt(highlightId)
-      const foundImage = mockImages.find((img) => img.id === id)
-      if (foundImage) {
-        setSelectedImage(id)
+      if (highlightId) {
+        const id = Number.parseInt(highlightId)
+        const foundImage = mockImages.find((img) => img.id === id)
+        if (foundImage) {
+          setSelectedImage(id)
+        }
       }
     }
   }, [])

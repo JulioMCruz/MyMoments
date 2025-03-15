@@ -1,3 +1,6 @@
+"use client"
+
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Heart } from "lucide-react"
 import MobileMenu from "@/components/mobile-menu"
@@ -7,13 +10,20 @@ import { useAccount } from "wagmi";
 import { useRouter } from "next/navigation";
 
 export default function Header() {
-
   const { isConnected } = useAccount()
   const router = useRouter()
+  const [isClient, setIsClient] = useState(false)
 
-  if (!isConnected) {
-    router.push("/")
-  }
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  // Only redirect on client-side
+  useEffect(() => {
+    if (isClient && !isConnected) {
+      router.push("/")
+    }
+  }, [isClient, isConnected, router])
 
   return (
     <header className="bg-purple-500 text-white">
@@ -23,7 +33,7 @@ export default function Header() {
 
         <div className="flex items-center">
           {/* Mobile Menu */}
-          {isConnected && (
+          {isClient && isConnected && (
             <MobileMenu variant="dashboard" />
           )}
 
@@ -36,7 +46,7 @@ export default function Header() {
         </div>
 
           {/* Desktop Navigation */}
-          {isConnected && (
+          {isClient && isConnected && (
           <nav className="hidden md:flex items-center">
             <div className="bg-purple-600/50 rounded-full p-1">
               <div className="flex space-x-1">
