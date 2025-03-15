@@ -91,13 +91,18 @@ Some compromises we made during developemnt is the lack of additon of an ai agen
 
 ## Technologies we used
 
-Base 
+#### Base 
 
-Cursor
 
-Self
+#### Self
 
-ZetaChain
+
+#### ZetaChain
+
+Team Moments has integrated Zetachain into their Social media platform Moments. Where users initiate the app during a significant moment (event, promise, commitment) The AI assistant suggests ideal formats for capturing the moment based on context Multiple verification methods are prompted at natural intervals. ZetaChain would elevate the experience through effortless crosschain transactions so everyone can join in the fun!
+
+
+#### Cursor
 
 
 ### Deployed to: https://www.mymoments.club/
