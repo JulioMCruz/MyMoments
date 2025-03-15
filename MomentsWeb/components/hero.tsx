@@ -6,19 +6,39 @@ import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
+import { useUser } from "@/context/UserContext"
+import { verifyUser } from "@/services/userService"
+import { useState } from "react"
 
 export default function Hero() {
-
     const { isConnected, address } = useAccount()
     const router = useRouter()
+    const { setUser } = useUser()
+    const [isLoading, setIsLoading] = useState(false)
 
-    const validateAndGoToDashboard = () => {
-        console.log("** Connected **");
-        console.log(address);
-
-        // we need to check if the user exist in the system, load his data
-        router.push("/dashboard");
-
+    const validateAndGoToDashboard = async () => {
+        if (!address) return
+        
+        try {
+            setIsLoading(true)
+            console.log("Verifying user with wallet:", address)
+            
+            // Verify user or create new user if not exists
+            const userData = await verifyUser(address)
+            
+            // Store user data in context
+            setUser(userData)
+            
+            console.log("User verified:", userData)
+            
+            // Navigate to dashboard
+            router.push("/dashboard")
+        } catch (error) {
+            console.error("Error verifying user:", error)
+            // Handle error (could add toast notification here)
+        } finally {
+            setIsLoading(false)
+        }
     }
 
     return (
@@ -59,9 +79,10 @@ export default function Hero() {
               {isConnected && (
                 <Button
                   className="py-6 bg-purple-500 hover:bg-purple-600 text-white font-semibold px-8 rounded-full text-lg flex items-center transition-all"
-                  onClick={() => validateAndGoToDashboard()}>
-                Get Started <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
+                  onClick={() => validateAndGoToDashboard()}
+                  disabled={isLoading}>
+                  {isLoading ? "Verifying..." : "Get Started"} <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
               ) 
              }
             </div>

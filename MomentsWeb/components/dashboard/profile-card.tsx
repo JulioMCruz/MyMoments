@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react"
 import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
-import { Share2, QrCode } from "lucide-react"
+import { Share2, QrCode, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -18,6 +18,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Check, Copy } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { logo } from "@/app/content/momentsAppLogo"
+import { getUserVerificationStatus, verifyUser, getUserByWalletAddress } from "@/services/user"
 
 import {
   Address,
@@ -59,23 +60,48 @@ export default function ProfileCard({ address }: ProfileCardProps) {
   const [copied, setCopied] = useState(false)
   const [selfApp, setSelfApp] = useState<any>(null)
   const [isClient, setIsClient] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [userId, setUserId] = useState<string>("")
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   // Set isClient to true once component mounts
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // Initialize selfApp only on client
+  // Fetch user information from database
   useEffect(() => {
-    if (isClient && SelfAppBuilder) {
+    async function fetchUserInfo() {
+      if (!address) return;
+      
       try {
-        const userId = uuidv4();
+        const userInfo = await getUserByWalletAddress(address);
+        setUserId(userInfo.id); // Set the user ID from the database
+        setIsVerified(userInfo.isVerified); // Set verification status
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error fetching user information:", error);
+        // Generate a fallback ID if needed
+        const fallbackId = uuidv4();
+        setUserId(fallbackId);
+        setIsLoading(false);
+      }
+    }
+    
+    fetchUserInfo();
+  }, [address]);
+
+  // Initialize selfApp only on client and after userId is set
+  useEffect(() => {
+    if (isClient && SelfAppBuilder && userId) {
+      try {
+        console.log("Initializing Self with userId:", userId);
         const app = new SelfAppBuilder({
           appName: "My Moments",
           scope: process.env.NEXT_PUBLIC_SELF_SCOPE, 
           endpoint: process.env.NEXT_PUBLIC_SELF_ENDPOINT,
           logoBase64: logo,
-          userId,
+          userId, // Use the user ID from the database
           disclosures: {
             name: true,
             passport_number: true,
@@ -87,8 +113,8 @@ export default function ProfileCard({ address }: ProfileCardProps) {
         console.error("Error creating SelfAppBuilder:", error);
       }
     }
-  }, [isClient]);
-  
+  }, [isClient, userId]);
+
   if (!address) {
     return (
       <div className="p-4 border rounded-lg bg-red-50">
@@ -101,9 +127,51 @@ export default function ProfileCard({ address }: ProfileCardProps) {
     setShowVerifyDialog(true)
   }
 
-  const handleCompleteVerification = () => {
+  const handleCompleteVerification = async () => {
     setShowVerifyDialog(false)
-    setIsVerified(true)
+    
+    // Call API to update verification status in the database
+    if (address) {
+      try {
+        // First, try to verify the user
+        const result = await verifyUser(address)
+        
+        if (result.success) {
+          // Fetch the latest user data from the database to get the current verification status
+          const userInfo = await getUserByWalletAddress(address)
+          setIsVerified(userInfo.isVerified)
+          
+          toast({
+            title: "Verification process completed",
+            description: userInfo.isVerified 
+              ? "Your account has been verified."
+              : "Verification is being processed. Please check again shortly.",
+          })
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Verification failed",
+            description: result.message || "Failed to verify your account.",
+          })
+        }
+      } catch (error) {
+        console.error("Error during verification:", error)
+        
+        // Even if verification API call fails, try to fetch the latest status
+        try {
+          const userInfo = await getUserByWalletAddress(address)
+          setIsVerified(userInfo.isVerified)
+        } catch (fetchError) {
+          console.error("Error fetching user status:", fetchError)
+          // Fallback to showing a generic error
+          toast({
+            variant: "destructive",
+            title: "Verification error",
+            description: "An error occurred. Please try again later."
+          })
+        }
+      }
+    }
   }
 
   // Format wallet address for display
@@ -121,6 +189,33 @@ export default function ProfileCard({ address }: ProfileCardProps) {
       description: "Wallet address copied to clipboard",
     })
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  // Function to manually refresh verification status
+  const refreshVerificationStatus = async () => {
+    if (!address) return
+    
+    setIsRefreshing(true)
+    try {
+      const userInfo = await getUserByWalletAddress(address)
+      setIsVerified(userInfo.isVerified)
+      
+      toast({
+        title: "Status refreshed",
+        description: userInfo.isVerified 
+          ? "Your account is verified."
+          : "Your account is not yet verified.",
+      })
+    } catch (error) {
+      console.error("Error refreshing verification status:", error)
+      toast({
+        variant: "destructive",
+        title: "Refresh failed",
+        description: "Could not refresh verification status.",
+      })
+    } finally {
+      setIsRefreshing(false)
+    }
   }
 
   return (
@@ -149,7 +244,11 @@ export default function ProfileCard({ address }: ProfileCardProps) {
                 <Address address={`${address}` as `0x${string}`}/>
               </Identity>
               <div className="flex items-center gap-2">
-                {isVerified ? (
+                {isLoading ? (
+                  <Badge variant="secondary" className="bg-gray-100 text-gray-700">
+                    Checking status...
+                  </Badge>
+                ) : isVerified ? (
                   <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-200">
                     Verified
                   </Badge>
@@ -168,6 +267,17 @@ export default function ProfileCard({ address }: ProfileCardProps) {
                     </Button>
                   </>
                 )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0"
+                  disabled={isRefreshing}
+                  onClick={refreshVerificationStatus}
+                  title="Refresh verification status"
+                >
+                  <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  <span className="sr-only">Refresh verification status</span>
+                </Button>
               </div>
             </div>
 
@@ -227,9 +337,34 @@ export default function ProfileCard({ address }: ProfileCardProps) {
                 {isClient && selfApp && SelfQRcodeWrapper ? (
                   <SelfQRcodeWrapper
                     selfApp={selfApp}
-                    onSuccess={() => {
-                      console.log('Verification successful');
-                      // Perform actions after successful verification
+                    onSuccess={async () => {
+                      console.log('Verification successful via QR code');
+                      
+                      // Wait a short time for the verification process to complete on the backend
+                      setTimeout(async () => {
+                        if (address) {
+                          try {
+                            // Fetch the latest user data from the database
+                            const userInfo = await getUserByWalletAddress(address);
+                            setIsVerified(userInfo.isVerified);
+                            
+                            if (userInfo.isVerified) {
+                              setShowVerifyDialog(false);
+                              toast({
+                                title: "Verification successful",
+                                description: "Your account has been verified.",
+                              });
+                            } else {
+                              toast({
+                                title: "Verification in progress",
+                                description: "Your verification is being processed. Please check again shortly.",
+                              });
+                            }
+                          } catch (error) {
+                            console.error("Error checking verification status:", error);
+                          }
+                        }
+                      }, 3000); // Give it 3 seconds to process
                     }}
                     darkMode={false}
                     size={200}
@@ -250,7 +385,7 @@ export default function ProfileCard({ address }: ProfileCardProps) {
               className="w-full bg-purple-500 hover:bg-purple-600"
               onClick={handleCompleteVerification}
             >
-              Close
+              Complete Verification
             </Button>
           </DialogFooter>
         </DialogContent>

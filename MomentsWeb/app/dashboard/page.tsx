@@ -6,10 +6,34 @@ import MomentsList from "@/components/dashboard/moments-list"
 import CreateMomentCard from "@/components/dashboard/create-moment-card"
 import Footer from "@/components/footer"
 import { useAccount } from "wagmi"
+import { useUser } from "@/context/UserContext"
+import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 
 export default function DashboardPage() {
+  const { address } = useAccount()
+  const { user, loading } = useUser()
+  const router = useRouter()
+  
+  // Redirect to home if not authenticated
+  useEffect(() => {
+    if (!loading && !user) {
+      console.log("User not authenticated, redirecting to home")
+      router.push("/")
+    }
+  }, [user, loading, router])
 
-  const { address } = useAccount();
+  // Show loading state while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse text-lg text-purple-600">Loading...</div>
+      </div>
+    )
+  }
+  
+  // Don't render dashboard content if user not authenticated
+  if (!user) return null
   
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
