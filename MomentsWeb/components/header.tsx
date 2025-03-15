@@ -18,9 +18,9 @@ export default function Header() {
 
         <div className="flex items-center">
           {/* Mobile Menu */}
-          {isConnected && (
+          {/* {isConnected && (
             <MobileMenu variant="main" />
-          )}
+          )} */}
 
           <Link href="/" className="flex items-center">
             <div className="hidden md:flex w-10 h-10 items-center justify-center mr-2">
