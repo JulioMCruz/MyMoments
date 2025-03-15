@@ -6,6 +6,7 @@ import { base } from 'wagmi/chains'; // add baseSepolia for testing
 import { coinbaseWallet } from 'wagmi/connectors';
 import { WagmiProvider, createConfig, http } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { logo } from './content/momentsAppLogo';
 
 // Create a client
 const queryClient = new QueryClient();
@@ -30,6 +31,11 @@ export function Providers(props: { children: ReactNode }) {
         <OnchainKitProvider
           apiKey={process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY} 
           chain={base} // add baseSepolia for testing 
+          config={{
+            appearance: {
+              theme: 'light',
+            }
+          }}
         >
           {props.children}
         </OnchainKitProvider>

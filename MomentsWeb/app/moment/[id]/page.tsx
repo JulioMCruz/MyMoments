@@ -1,9 +1,10 @@
 "use client"
 
+import { use } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { PenLine, Calendar, User, ArrowLeft } from "lucide-react"
-import Header from "@/components/header"
+import Header from "@/components/dashboard/header"
 import Footer from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -11,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 
 export default function MomentPage({ params }: { params: { id: string } }) {
   const router = useRouter()
+  const { id } = use(params)
 
   const handleBack = () => {
     router.push("/dashboard")
@@ -18,7 +20,7 @@ export default function MomentPage({ params }: { params: { id: string } }) {
 
   // Mock moment data - in a real app, this would be fetched based on the ID
   const momentData = {
-    id: params.id,
+    id: id,
     title: "Carol & Dave's Commitment",
     description:
       "A beautiful ceremony celebrating Carol and Dave's commitment to each other. This special moment took place at Sunset Beach with close friends and family in attendance. The couple exchanged personalized vows and commemorated their love with this blockchain-verified moment.",

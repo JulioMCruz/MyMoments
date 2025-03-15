@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
@@ -14,10 +14,57 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Check, Copy } from "lucide-react"
+import { toast } from "@/components/ui/use-toast"
 
-export default function ProfileCard() {
+import SelfQRcodeWrapper, { SelfAppBuilder, SelfQRcode } from '@selfxyz/qrcode';
+import { v4 as uuidv4 } from 'uuid';
+import { logo } from "@/app/content/momentsAppLogo"
+
+import {
+  Address,
+  Avatar,
+  Name,
+  Identity,
+  EthBalance, 
+} from '@coinbase/onchainkit/identity';
+
+interface ProfileCardProps {
+  address: `0x${string}` | undefined
+}
+
+export default function ProfileCard({ address }: ProfileCardProps) {
+
+
   const [isVerified, setIsVerified] = useState(false)
   const [showVerifyDialog, setShowVerifyDialog] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  const userId = uuidv4();
+  
+  if (!userId) {
+    return (
+      <div className="p-4 border rounded-lg bg-red-50">
+        <p className="text-red-600">Error: No wallet address found. Please connect your wallet.</p>
+      </div>
+    )
+  }
+
+  const selfApp = new SelfAppBuilder({
+    appName: "My Moments",
+    scope: process.env.NEXT_PUBLIC_SELF_SCOPE, 
+    endpoint: process.env.NEXT_PUBLIC_SELF_ENDPOINT,
+    logoBase64: logo, // Optional
+    userId ,
+    // Optional disclosure requirements
+    disclosures: {
+      // DG1 disclosures
+      name: true,
+      passport_number: true,
+      // Custom verification rules
+    },
+  }).build();
 
   const handleVerifyNow = () => {
     setShowVerifyDialog(true)
@@ -28,33 +75,48 @@ export default function ProfileCard() {
     setIsVerified(true)
   }
 
+  // Format wallet address for display
+  const displayAddress = useMemo(() => {
+    if (!address) return ""
+    return `${address.substring(0, 8)}...${address.substring(address.length - 6)}`
+  }, [address])
+
+  const copyToClipboard = () => {
+    if (!address) return
+    navigator.clipboard.writeText(address)
+    setCopied(true)
+    toast({
+      title: "Address copied!",
+      description: "Wallet address copied to clipboard",
+    })
+    setTimeout(() => setCopied(false), 2000)
+  }
+
   return (
     <>
       <Card className="overflow-hidden">
         <div className="h-24 bg-gradient-to-r from-pink-300 to-purple-500" />
         <div className="p-6 pt-0 relative">
           <div className="absolute right-6 top-2">
-            <Button variant="ghost" size="icon" className="rounded-full bg-white/80">
+            {/* <Button variant="ghost" size="icon" className="rounded-full bg-white/80">
               <Share2 className="h-4 w-4" />
               <span className="sr-only">Share profile</span>
-            </Button>
+            </Button> */}
           </div>
 
-          <div className="relative -mt-12 mb-4">
-            <div className="w-24 h-24 rounded-full border-4 border-white overflow-hidden bg-blue-500">
-              <Image
-                src="/placeholder.svg?height=96&width=96"
-                alt="Profile"
-                width={96}
-                height={96}
-                className="object-cover"
-              />
-            </div>
+          <div className="relative -mt-12 mb-0">
+            <Identity hasCopyAddressOnClick className="h-28 w-28 rounded-full">
+                <Avatar className="h-28 w-28 -ml-[16px] -mt-[5px]" address={`${address}` as `0x${string}`} />
+            </Identity>
+
           </div>
 
           <div className="space-y-4">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-xl font-bold">JulioMCruz.base.eth</h2>
+              <Identity hasCopyAddressOnClick className="h-12 w-48 bg-white text-black rounded-lg p-2">
+                <Name  address={`${address}` as `0x${string}`}/>
+                <Address address={`${address}` as `0x${string}`}/>
+              </Identity>
               <div className="flex items-center gap-2">
                 {isVerified ? (
                   <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-200">
@@ -108,18 +170,40 @@ export default function ProfileCard() {
             </DialogDescription>
           </DialogHeader>
 
+          <div className="pt-4 border-t border-b mx-8">
+          <p className="text-sm font-medium mb-2">Wallet Address</p>
+          <div className="flex items-center justify-between bg-muted/50 p-3 rounded-lg">
+            <code className="text-sm font-mono">{displayAddress}</code>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={copyToClipboard} className="h-8 w-8">
+                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    <span className="sr-only">Copy address</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{copied ? "Copied!" : "Copy address"}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          </div>
+
           <div className="flex flex-col items-center justify-center py-6">
             <div className="relative w-64 h-64 border border-gray-200 rounded-lg p-4 bg-white">
               <div className="absolute inset-0 flex items-center justify-center">
-                <QrCode className="w-8 h-8 text-gray-300" />
+                {/* <QrCode className="w-8 h-8 text-gray-300" /> */}
+                <SelfQRcodeWrapper
+                selfApp={selfApp}
+                onSuccess={() => {
+                  console.log('Verification successful');
+                  // Perform actions after successful verification
+                }}
+                darkMode={false} // Optional: set to true for dark mode
+                size={200} // Optional: customize QR code size (default: 300)
+              />              
               </div>
-              <Image
-                src="/placeholder.svg?height=240&width=240&text=Verification+QR"
-                alt="Verification QR Code"
-                width={240}
-                height={240}
-                className="mx-auto"
-              />
             </div>
             <p className="mt-4 text-sm text-gray-500 text-center">
               This verification will link your wallet address to your profile and enable full platform functionality.
@@ -132,7 +216,7 @@ export default function ProfileCard() {
               className="w-full bg-purple-500 hover:bg-purple-600"
               onClick={handleCompleteVerification}
             >
-              Complete Verification
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
