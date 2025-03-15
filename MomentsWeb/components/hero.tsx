@@ -4,9 +4,22 @@ import { useAccount } from "wagmi"
 import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation"
 
 export default function Hero() {
-    const { isConnected } = useAccount()
+
+    const { isConnected, address } = useAccount()
+    const router = useRouter()
+
+    const validateAndGoToDashboard = () => {
+        console.log("** Connected **");
+        console.log(address);
+
+        // we need to check if the user exist in the system, load his data
+        router.push("/dashboard");
+
+    }
 
     return (
         <section className="relative w-full">
@@ -44,12 +57,11 @@ export default function Hero() {
                 Create an on-chain record of your eternal love and celebrate your commitment on the blockchain
               </p>
               {isConnected && (
-                <Link
-                  href="/dashboard"
-                  className="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-3 px-8 rounded-full text-lg flex items-center transition-all"
-              >
+                <Button
+                  className="py-6 bg-purple-500 hover:bg-purple-600 text-white font-semibold px-8 rounded-full text-lg flex items-center transition-all"
+                  onClick={() => validateAndGoToDashboard()}>
                 Get Started <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
+              </Button>
               ) 
              }
             </div>

@@ -34,11 +34,11 @@ export default function Header() {
         <nav className="hidden md:flex items-center space-x-6">
 
 
-          {isConnected && (
+          {/* {isConnected && (
             <Link href="/dashboard" className="hover:underline">
               Dashboard
             </Link>
-          )}
+          )} */}
           <Link href="/discover" className="hover:underline">
             Discover
           </Link>
