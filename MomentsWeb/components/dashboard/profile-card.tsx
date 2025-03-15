@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react"
 import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
-import { Share2, QrCode } from "lucide-react"
+import { Share2, QrCode, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -62,6 +62,7 @@ export default function ProfileCard({ address }: ProfileCardProps) {
   const [isClient, setIsClient] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [userId, setUserId] = useState<string>("")
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   // Set isClient to true once component mounts
   useEffect(() => {
@@ -132,13 +133,19 @@ export default function ProfileCard({ address }: ProfileCardProps) {
     // Call API to update verification status in the database
     if (address) {
       try {
+        // First, try to verify the user
         const result = await verifyUser(address)
         
         if (result.success) {
-          setIsVerified(true)
+          // Fetch the latest user data from the database to get the current verification status
+          const userInfo = await getUserByWalletAddress(address)
+          setIsVerified(userInfo.isVerified)
+          
           toast({
-            title: "Verification successful",
-            description: "Your account has been verified.",
+            title: "Verification process completed",
+            description: userInfo.isVerified 
+              ? "Your account has been verified."
+              : "Verification is being processed. Please check again shortly.",
           })
         } else {
           toast({
@@ -149,8 +156,20 @@ export default function ProfileCard({ address }: ProfileCardProps) {
         }
       } catch (error) {
         console.error("Error during verification:", error)
-        // Set state to true anyway for better UX, even if DB update failed
-        setIsVerified(true)
+        
+        // Even if verification API call fails, try to fetch the latest status
+        try {
+          const userInfo = await getUserByWalletAddress(address)
+          setIsVerified(userInfo.isVerified)
+        } catch (fetchError) {
+          console.error("Error fetching user status:", fetchError)
+          // Fallback to showing a generic error
+          toast({
+            variant: "destructive",
+            title: "Verification error",
+            description: "An error occurred. Please try again later."
+          })
+        }
       }
     }
   }
@@ -170,6 +189,33 @@ export default function ProfileCard({ address }: ProfileCardProps) {
       description: "Wallet address copied to clipboard",
     })
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  // Function to manually refresh verification status
+  const refreshVerificationStatus = async () => {
+    if (!address) return
+    
+    setIsRefreshing(true)
+    try {
+      const userInfo = await getUserByWalletAddress(address)
+      setIsVerified(userInfo.isVerified)
+      
+      toast({
+        title: "Status refreshed",
+        description: userInfo.isVerified 
+          ? "Your account is verified."
+          : "Your account is not yet verified.",
+      })
+    } catch (error) {
+      console.error("Error refreshing verification status:", error)
+      toast({
+        variant: "destructive",
+        title: "Refresh failed",
+        description: "Could not refresh verification status.",
+      })
+    } finally {
+      setIsRefreshing(false)
+    }
   }
 
   return (
@@ -221,6 +267,17 @@ export default function ProfileCard({ address }: ProfileCardProps) {
                     </Button>
                   </>
                 )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0"
+                  disabled={isRefreshing}
+                  onClick={refreshVerificationStatus}
+                  title="Refresh verification status"
+                >
+                  <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  <span className="sr-only">Refresh verification status</span>
+                </Button>
               </div>
             </div>
 
@@ -280,9 +337,34 @@ export default function ProfileCard({ address }: ProfileCardProps) {
                 {isClient && selfApp && SelfQRcodeWrapper ? (
                   <SelfQRcodeWrapper
                     selfApp={selfApp}
-                    onSuccess={() => {
-                      console.log('Verification successful');
-                      // Perform actions after successful verification
+                    onSuccess={async () => {
+                      console.log('Verification successful via QR code');
+                      
+                      // Wait a short time for the verification process to complete on the backend
+                      setTimeout(async () => {
+                        if (address) {
+                          try {
+                            // Fetch the latest user data from the database
+                            const userInfo = await getUserByWalletAddress(address);
+                            setIsVerified(userInfo.isVerified);
+                            
+                            if (userInfo.isVerified) {
+                              setShowVerifyDialog(false);
+                              toast({
+                                title: "Verification successful",
+                                description: "Your account has been verified.",
+                              });
+                            } else {
+                              toast({
+                                title: "Verification in progress",
+                                description: "Your verification is being processed. Please check again shortly.",
+                              });
+                            }
+                          } catch (error) {
+                            console.error("Error checking verification status:", error);
+                          }
+                        }
+                      }, 3000); // Give it 3 seconds to process
                     }}
                     darkMode={false}
                     size={200}
