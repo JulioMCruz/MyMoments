@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useParams } from "next/navigation"
 import Image from "next/image"
-import { PenLine, Calendar, User, ArrowLeft, Clock, Users, Maximize2, X } from "lucide-react"
+import { PenLine, Calendar, User, ArrowLeft, Clock, Users, Maximize2, X, CheckCircle2 } from "lucide-react"
 import Header from "@/components/dashboard/header"
 import Footer from "@/components/footer"
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,9 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useUser } from "@/context/UserContext"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useAccount, useSignMessage } from "wagmi"
+import { base } from "wagmi/chains"
+import { useToast } from "@/components/ui/use-toast"
 
 // Define types for our data
 interface MomentParticipant {
@@ -48,11 +51,16 @@ export default function MomentPage() {
   const params = useParams()
   const id = params?.id as string
   const { user } = useUser()
+  const { address } = useAccount()
+  const { signMessageAsync } = useSignMessage()
+  const { toast } = useToast()
   
   const [moment, setMoment] = useState<Moment | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isImageFullscreen, setIsImageFullscreen] = useState(false)
+  const [isSigning, setIsSigning] = useState(false)
+  const [signSuccess, setSignSuccess] = useState(false)
 
   useEffect(() => {
     // Only fetch moment if we have an ID
@@ -101,6 +109,90 @@ export default function MomentPage() {
 
   const toggleImageFullscreen = () => {
     setIsImageFullscreen(!isImageFullscreen)
+  }
+
+  // Handle signing the moment
+  const handleSignMoment = async () => {
+    if (!moment || !address || !user) return
+
+    try {
+      setIsSigning(true)
+
+      // Find the participant with the current user's wallet address
+      const participant = moment.participants.find(
+        p => p.user.walletAddress.toLowerCase() === address.toLowerCase() && !p.hasSigned
+      )
+
+      if (!participant) {
+        throw new Error("You are not a participant or have already signed this moment")
+      }
+
+      // Create a message with necessary data for verification
+      const messageData = {
+        address: address,
+        chainId: base.id,
+        domain: window.location.host,
+        uri: window.location.origin,
+        statement: `I hereby sign the moment: "${moment.title}" (ID: ${moment.id})`,
+        nonce: `moment-${moment.id}-${participant.id}`,
+        version: '1',
+      }
+      
+      // Convert the message to a string for signing
+      const messageString = JSON.stringify(messageData)
+
+      // Request the user to sign the message
+      const signature = await signMessageAsync({ message: messageString })
+
+      if (!signature) {
+        throw new Error("Signature was cancelled or failed")
+      }
+
+      // Send the signature to the server to update the participant status
+      const updateResponse = await fetch(`/api/moments/${moment.id}/sign`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          participantId: participant.id,
+          signature,
+          message: messageData,  // Send the original object data, not the stringified version
+        }),
+      })
+
+      if (!updateResponse.ok) {
+        const errorData = await updateResponse.json()
+        throw new Error(errorData.error || "Failed to update signature status")
+      }
+
+      // Update was successful
+      setSignSuccess(true)
+      toast({
+        title: "Signature successful!",
+        description: "You have successfully signed this moment.",
+        duration: 5000,
+      })
+
+      // Refresh the moment data to show updated status
+      await fetchMoment(moment.id)
+
+      // Redirect to dashboard after a short delay
+      setTimeout(() => {
+        router.push("/dashboard")
+      }, 3000)
+
+    } catch (error) {
+      console.error("Error signing moment:", error)
+      toast({
+        title: "Signature failed",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive",
+        duration: 5000,
+      })
+    } finally {
+      setIsSigning(false)
+    }
   }
 
   // Get status-specific styles
@@ -234,6 +326,11 @@ export default function MomentPage() {
   const isUserCreator = user?.id === moment.creator.id
   const totalParticipants = moment.participants.length + 1 // +1 for creator
   
+  // Check if current user is a participant who hasn't signed yet
+  const canSign = address && moment.participants.some(
+    p => p.user.walletAddress.toLowerCase() === address.toLowerCase() && !p.hasSigned
+  )
+  
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
@@ -366,6 +463,8 @@ export default function MomentPage() {
                   {/* Participants */}
                   {moment.participants.map((participant) => {
                     const isCurrentUser = user?.id === participant.user.id
+                    const isCurrentWallet = address && participant.user.walletAddress.toLowerCase() === address.toLowerCase()
+                    
                     return (
                       <div key={participant.id} className="flex items-center justify-between flex-wrap gap-2">
                         <div className="flex items-center">
@@ -375,7 +474,9 @@ export default function MomentPage() {
                           <div>
                             <div className="flex items-center">
                               <p className="font-medium">Participant</p>
-                              {isCurrentUser && <Badge variant="outline" className="ml-2 text-xs">You</Badge>}
+                              {(isCurrentUser || isCurrentWallet) && (
+                                <Badge variant="outline" className="ml-2 text-xs">You</Badge>
+                              )}
                             </div>
                             <p className="text-sm text-gray-500">{participant.user.walletAddress}</p>
                           </div>
@@ -399,11 +500,29 @@ export default function MomentPage() {
               {/* Actions */}
               <div className="pt-4 space-y-3">
                 {/* Show sign button only if user is a participant and hasn't signed yet */}
-                {moment.participants.some(p => p.user.id === user?.id && !p.hasSigned) && (
-                  <Button className="w-full bg-purple-500 hover:bg-purple-600">
-                    <PenLine className="mr-2 h-4 w-4" /> Sign This Moment
+                {canSign && !signSuccess ? (
+                  <Button 
+                    className="w-full bg-purple-500 hover:bg-purple-600" 
+                    onClick={handleSignMoment}
+                    disabled={isSigning}
+                  >
+                    {isSigning ? (
+                      <>
+                        <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                        Signing...
+                      </>
+                    ) : (
+                      <>
+                        <PenLine className="mr-2 h-4 w-4" /> Sign This Moment
+                      </>
+                    )}
                   </Button>
-                )}
+                ) : signSuccess ? (
+                  <div className="w-full p-3 bg-green-50 border border-green-200 rounded-md text-center text-green-700 flex items-center justify-center">
+                    <CheckCircle2 className="mr-2 h-5 w-5" />
+                    <span>Successfully signed! Redirecting to dashboard...</span>
+                  </div>
+                ) : null}
                 
                 <Button variant="outline" className="w-full" onClick={handleBack}>
                   <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
