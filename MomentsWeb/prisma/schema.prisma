@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,9 +8,41 @@ datasource db {
 }
 
 model User {
-  id            String   @id @default(uuid())
-  walletAddress String   @unique
-  isVerified    Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                  String              @id @default(uuid())
+  walletAddress       String              @unique
+  isVerified          Boolean             @default(false)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  createdMoments      Moment[]            @relation("CreatedMoments")
+  participatedMoments MomentParticipant[]
+}
+
+model Moment {
+  id           String              @id @default(uuid())
+  title        String
+  description  String
+  imageUrl     String
+  ipfsHash     String
+  status       String              @default("proposed")
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  creatorId    String
+  nftTokenId   String?
+  creator      User                @relation("CreatedMoments", fields: [creatorId], references: [id])
+  participants MomentParticipant[]
+}
+
+model MomentParticipant {
+  id        String   @id @default(uuid())
+  userId    String
+  momentId  String
+  hasSigned Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  moment    Moment   @relation(fields: [momentId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, momentId])
+  @@index([userId])
+  @@index([momentId])
 }

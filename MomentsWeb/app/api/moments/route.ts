@@ -1,97 +1,150 @@
 import { NextResponse } from "next/server"
-import type { Moment } from "@/lib/types"
+import { prisma } from "@/lib/prisma"
 
-// Mock data - in a real app, this would come from a database
-const mockMoments: Moment[] = [
-  {
-    id: "1",
-    title: "Trip to Paris",
-    description: "Our amazing vacation in the city of love",
-    date: new Date("2023-10-15"),
-    imageUrl: "/placeholder.svg?height=300&width=500",
-    status: "completed",
-    creator: {
-      id: "1",
-      name: "John",
-      walletAddress: "0x1234...5678",
-      ensName: "john.eth",
-      joinedDate: new Date("2023-03-01"),
-      isVerified: true,
-    },
-    participants: [
-      {
-        id: "1",
-        name: "John",
-        walletAddress: "0x1234...5678",
-        ensName: "john.eth",
-        joinedDate: new Date("2023-03-01"),
-        isVerified: true,
-      },
-      {
-        id: "2",
-        name: "Jane",
-        walletAddress: "0xabcd...ef01",
-        joinedDate: new Date("2023-02-15"),
-        isVerified: false,
-      },
-    ],
-    nftTokenId: "12345",
-  },
-  {
-    id: "2",
-    title: "Wedding Anniversary",
-    description: "Celebrating 5 years of marriage",
-    date: new Date("2023-08-15"),
-    imageUrl: "/placeholder.svg?height=300&width=500",
-    status: "proposed",
-    creator: {
-      id: "2",
-      name: "Jane",
-      walletAddress: "0xabcd...ef01",
-      joinedDate: new Date("2023-02-15"),
-      isVerified: false,
-    },
-    participants: [
-      {
-        id: "2",
-        name: "Jane",
-        walletAddress: "0xabcd...ef01",
-        joinedDate: new Date("2023-02-15"),
-        isVerified: false,
-      },
-      {
-        id: "3",
-        name: "Mike",
-        walletAddress: "0xef01...2345",
-        joinedDate: new Date("2023-04-10"),
-        isVerified: true,
-      },
-    ],
-  },
-]
+// GET endpoint to retrieve moments by wallet address (either creator or participant)
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const walletAddress = searchParams.get('walletAddress')
 
-export async function GET() {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 500))
+  try {
+    if (walletAddress) {
+      // Find moments where user is either creator or participant
+      const moments = await prisma.moment.findMany({
+        where: {
+          OR: [
+            // Where user is the creator
+            {
+              creator: {
+                walletAddress: walletAddress
+              }
+            },
+            // Where user is a participant
+            {
+              participants: {
+                some: {
+                  user: {
+                    walletAddress: walletAddress
+                  }
+                }
+              }
+            }
+          ]
+        },
+        include: {
+          creator: true,
+          participants: {
+            include: {
+              user: true
+            }
+          }
+        }
+      })
 
-  return NextResponse.json(mockMoments)
+      return NextResponse.json(moments)
+    } else {
+      // If no wallet address is provided, return all moments
+      const moments = await prisma.moment.findMany({
+        include: {
+          creator: true,
+          participants: {
+            include: {
+              user: true
+            }
+          }
+        }
+      })
+
+      return NextResponse.json(moments)
+    }
+  } catch (error) {
+    console.error("Error fetching moments:", error)
+    return NextResponse.json({ error: "Failed to fetch moments" }, { status: 500 })
+  }
 }
 
+// POST endpoint to create a new moment
 export async function POST(request: Request) {
   try {
-    const moment = await request.json()
+    const { title, description, imageUrl, ipfsHash, creatorWalletAddress, participantWallets } = await request.json()
 
-    // In a real app, you would save to a database and generate an ID
-    const newMoment = {
-      ...moment,
-      id: Math.random().toString(36).substring(2, 9),
-      date: new Date(),
-      status: "proposed",
+    if (!title || !description || !imageUrl || !ipfsHash || !creatorWalletAddress) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    return NextResponse.json(newMoment, { status: 201 })
+    // Find or create the creator user
+    let creator = await prisma.user.findUnique({
+      where: { walletAddress: creatorWalletAddress }
+    })
+
+    if (!creator) {
+      creator = await prisma.user.create({
+        data: {
+          walletAddress: creatorWalletAddress,
+          isVerified: false
+        }
+      })
+    }
+
+    // Create the new moment
+    const newMoment = await prisma.moment.create({
+      data: {
+        title,
+        description,
+        imageUrl,
+        ipfsHash,
+        creatorId: creator.id,
+        status: "proposed"
+      }
+    })
+
+    // Process participant wallets
+    if (participantWallets && participantWallets.length > 0) {
+      for (const walletAddress of participantWallets) {
+        // Skip empty wallet addresses
+        if (!walletAddress) continue
+
+        // Find or create the participant user
+        let participant = await prisma.user.findUnique({
+          where: { walletAddress }
+        })
+
+        if (!participant) {
+          participant = await prisma.user.create({
+            data: {
+              walletAddress,
+              isVerified: false
+            }
+          })
+        }
+
+        // Create the moment participant relationship
+        await prisma.momentParticipant.create({
+          data: {
+            userId: participant.id,
+            momentId: newMoment.id,
+            hasSigned: false
+          }
+        })
+      }
+    }
+
+    // Return the created moment with creator and participants
+    const createdMoment = await prisma.moment.findUnique({
+      where: { id: newMoment.id },
+      include: {
+        creator: true,
+        participants: {
+          include: {
+            user: true
+          }
+        }
+      }
+    })
+
+    return NextResponse.json(createdMoment, { status: 201 })
   } catch (error) {
-    return NextResponse.json({ error: "Failed to create moment" }, { status: 400 })
+    console.error("Error creating moment:", error)
+    return NextResponse.json({ error: "Failed to create moment" }, { status: 500 })
   }
 }
 
