@@ -13,9 +13,11 @@ export default function Home() {
 
       <main className="flex-1">
         <Hero />
-        <FeaturedMoments />
+        <div id="latest-moments">
+          <FeaturedMoments />
+        </div>
 
-        <section className="py-16 px-6 bg-white">
+        <section className="py-16 px-6 bg-white" id="how-it-works">
           <div className="max-w-6xl mx-auto">
             <h2 className="text-3xl font-bold text-center mb-12">How It Works</h2>
             <div className="grid md:grid-cols-3 gap-8">
