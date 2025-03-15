@@ -6,7 +6,7 @@ import { Heart } from "lucide-react"
 
 interface PublicMomentCardProps {
   moment: {
-    id: number
+    id: number | string
     title: string
     description: string
     imageUrl: string
