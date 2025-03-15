@@ -144,7 +144,7 @@ export default function ProfileCard({ address }: ProfileCardProps) {
 
           <div className="space-y-4">
             <div className="flex items-center gap-2 flex-wrap">
-              <Identity hasCopyAddressOnClick className="h-12 w-48 bg-white text-black rounded-lg p-2">
+              <Identity hasCopyAddressOnClick className="h-12 w-72 bg-white text-black rounded-lg p-2">
                 <Name  address={`${address}` as `0x${string}`}/>
                 <Address address={`${address}` as `0x${string}`}/>
               </Identity>
