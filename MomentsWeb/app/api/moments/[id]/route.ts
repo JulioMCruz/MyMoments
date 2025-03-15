@@ -16,9 +16,10 @@ export async function GET(
         creator: true,
         participants: {
           include: {
-            user: true
-          }
-        }
+            user: true,
+          },
+        },
+        publishInfo: true  // Include the publishInfo relation
       }
     })
 
@@ -26,25 +27,30 @@ export async function GET(
       return NextResponse.json({ error: "Moment not found" }, { status: 404 })
     }
 
-    // Transform moment to include calculated status
-    let currentStatus = moment.status === "proposed" ? "created" : moment.status.toLowerCase()
-    
+    // Transform the moment to include calculated status
+    let status = moment.status
+    // Convert old "proposed" to "created"
+    if (status === "proposed") {
+      status = "created"
+    }
+
     // Calculate the actual status based on participant signatures
-    if (moment.participants.length > 0) {
+    if (status !== "published" && moment.participants.length > 0) {
       const allSigned = moment.participants.every(p => p.hasSigned)
       
       if (allSigned) {
-        currentStatus = "completed"
+        status = "completed"
       } else if (moment.participants.some(p => p.hasSigned)) {
-        currentStatus = "pending"
+        status = "pending"
       } else {
-        currentStatus = "created"
+        status = "created"
       }
     }
     
+    // Use the actual publishInfo from the database
     const transformedMoment = {
       ...moment,
-      status: currentStatus
+      status,
     }
 
     return NextResponse.json(transformedMoment)

@@ -3,8 +3,9 @@ import Link from "next/link"
 import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Mountain, Timer, Users, Gift, Award, Heart, Star } from "lucide-react"
+import { Mountain, Timer, Users, Gift, Award, Heart, Star, Share2 } from "lucide-react"
 import { useUser } from "@/context/UserContext"
+import { useAccount } from "wagmi"
 
 // Define types for our data
 interface MomentParticipant {
@@ -15,6 +16,14 @@ interface MomentParticipant {
   user: {
     walletAddress: string
   }
+}
+
+interface MomentPublish {
+  isPublished: boolean
+  isPrivate: boolean
+  allowedWallets: string[]
+  pricingType: string
+  price: number
 }
 
 interface Moment {
@@ -32,6 +41,7 @@ interface Moment {
     walletAddress: string
   }
   participants: MomentParticipant[]
+  publishInfo: MomentPublish | null
 }
 
 // Map moment types to icons (used as fallback if image fails to load)
@@ -49,6 +59,7 @@ export default function MomentsList() {
   const [moments, setMoments] = useState<Moment[]>([])
   const [loading, setLoading] = useState(true)
   const { user } = useUser()
+  const { address } = useAccount()
 
   useEffect(() => {
     // Only fetch moments if we have a user
@@ -72,7 +83,46 @@ export default function MomentsList() {
         status: moment.status === "proposed" ? "created" : moment.status.toLowerCase()
       }))
       
-      setMoments(updatedData)
+      // Filter moments based on access permissions - for now, we show all moments
+      // since the publish functionality isn't in the database yet
+      const filteredMoments = updatedData.filter((moment: Moment) => {
+        // Always show moments where the user is the creator
+        if (moment.creator.walletAddress.toLowerCase() === walletAddress.toLowerCase()) {
+          return true
+        }
+        
+        // Always show moments where the user is a participant
+        const isParticipant = moment.participants.some(
+          p => p.user.walletAddress.toLowerCase() === walletAddress.toLowerCase()
+        )
+        if (isParticipant) {
+          return true
+        }
+        
+        // For now, we don't filter by publish settings since they don't exist in the database yet
+        // When publish functionality is added, this code will become relevant
+        /*
+        // For other moments, check publish settings
+        if (moment.publishInfo?.isPublished) {
+          // If public, show to everyone
+          if (!moment.publishInfo.isPrivate) {
+            return true
+          }
+          
+          // If private, check if user's wallet is in the allowed list
+          if (moment.publishInfo.isPrivate && address) {
+            return moment.publishInfo.allowedWallets.some(
+              allowedWallet => allowedWallet.toLowerCase() === address.toLowerCase()
+            )
+          }
+        }
+        */
+        
+        // By default, don't show the moment
+        return false
+      })
+      
+      setMoments(filteredMoments)
     } catch (error) {
       console.error("Error fetching moments:", error)
     } finally {
@@ -83,6 +133,13 @@ export default function MomentsList() {
   // Helper function to get status-specific styles
   const getStatusStyles = (status: string) => {
     switch (status.toLowerCase()) {
+      case "published":
+        return {
+          bgColor: "bg-blue-500",
+          textColor: "text-blue-700",
+          lightBgColor: "bg-blue-50",
+          borderColor: "border-blue-200",
+        }
       case "completed":
         return {
           bgColor: "bg-green-500",
@@ -116,7 +173,11 @@ export default function MomentsList() {
 
   // Function to get the correct link based on moment status
   const getMomentLink = (moment: Moment) => {
-    return moment.status.toLowerCase() === "completed" ? `/moment-publish/${moment.id}` : `/moment/${moment.id}`
+    const status = moment.status.toLowerCase();
+    if (status === "completed" || status === "published") {
+      return `/moment-publish/${moment.id}`;
+    }
+    return `/moment/${moment.id}`;
   }
 
   // Function to determine moment progress (signed participants / total participants)
@@ -133,6 +194,7 @@ export default function MomentsList() {
   const createdCount = moments.filter(m => m.status.toLowerCase() === "created").length
   const pendingCount = moments.filter(m => m.status.toLowerCase() === "pending").length
   const completedCount = moments.filter(m => m.status.toLowerCase() === "completed").length
+  const publishedCount = moments.filter(m => m.status.toLowerCase() === "published").length
 
   // Choose an appropriate icon for each moment (as fallback)
   const getIconForMoment = (moment: Moment) => {
@@ -147,6 +209,32 @@ export default function MomentsList() {
                      "default"
     
     return momentIcons[momentType] || Heart
+  }
+
+  // Helper to determine if a moment is published and accessible
+  const isPublishedAndAccessible = (moment: Moment) => {
+    // Always accessible if user is creator or participant
+    if (user && (
+      moment.creator.walletAddress.toLowerCase() === user.walletAddress.toLowerCase() ||
+      moment.participants.some(p => 
+        p.user.walletAddress.toLowerCase() === user.walletAddress.toLowerCase()
+      )
+    )) {
+      return true
+    }
+    
+    // Check publish settings if they exist
+    if (moment.publishInfo && moment.publishInfo.isPublished) {
+      if (!moment.publishInfo.isPrivate) return true
+      
+      if (address && moment.publishInfo.allowedWallets && moment.publishInfo.allowedWallets.some(
+        wallet => wallet.toLowerCase() === address.toLowerCase()
+      )) {
+        return true
+      }
+    }
+    
+    return false
   }
 
   if (loading) {
@@ -192,11 +280,15 @@ export default function MomentsList() {
             <div className="w-3 h-3 rounded-full bg-green-500 mr-1"></div>
             <span>Completed</span>
           </div>
+          <div className="flex items-center">
+            <div className="w-3 h-3 rounded-full bg-blue-500 mr-1"></div>
+            <span>Published</span>
+          </div>
         </div>
       </div>
 
       {/* Status Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-8">
         <Card className="bg-purple-50 border-purple-200">
           <div className="p-4 flex items-center">
             <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center mr-3">
@@ -232,6 +324,18 @@ export default function MomentsList() {
             </div>
           </div>
         </Card>
+
+        <Card className="bg-blue-50 border-blue-200">
+          <div className="p-4 flex items-center">
+            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+              <Share2 className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm text-blue-600">Published</p>
+              <p className="text-2xl font-bold">{publishedCount}</p>
+            </div>
+          </div>
+        </Card>
       </div>
 
       {moments.length === 0 ? (
@@ -256,6 +360,10 @@ export default function MomentsList() {
             // Count total participants (including creator)
             const totalParticipants = moment.participants.length + 1
             
+            // Check if publish info exists before accessing properties
+            const isPublished = moment.publishInfo?.isPublished || false
+            const isPrivate = moment.publishInfo?.isPrivate || false
+            
             return (
               <Link key={moment.id} href={link}>
                 <Card className={`h-full hover:shadow-md transition-all border-l-4 ${styles.borderColor}`}>
@@ -276,10 +384,17 @@ export default function MomentsList() {
                     )}
                     
                     {/* Status badge overlay */}
-                    <div className="absolute top-2 right-2">
+                    <div className="absolute top-2 right-2 flex space-x-1">
                       <Badge className={`${styles.bgColor} text-white hover:${styles.bgColor}`}>
                         {moment.status.charAt(0).toUpperCase() + moment.status.slice(1).toLowerCase()}
                       </Badge>
+                      
+                      {/* Show publish status for completed moments - only if publishInfo exists */}
+                      {moment.status.toLowerCase() === "completed" && isPublished && (
+                        <Badge className={isPrivate ? "bg-blue-500 text-white" : "bg-green-500 text-white"}>
+                          {isPrivate ? "Private" : "Public"}
+                        </Badge>
+                      )}
                     </div>
                   </div>
                   
