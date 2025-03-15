@@ -9,69 +9,113 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
 
-// Mock data for the gallery with more detailed descriptions
-const mockImages = Array.from({ length: 18 }, (_, i) => ({
-  id: i + 1,
-  title: `Moment ${i + 1}`,
-  description: `This is a beautiful moment captured in time. It represents a special occasion where people came together to celebrate life, love, and friendship. The memory of this day will be cherished forever as it marks an important milestone in the journey of those involved. Every detail of this moment has been carefully preserved to ensure that the emotions and experiences can be relived through this digital artifact.`,
-  creator: `Creator${i + 1}.eth`,
-  date: new Date(2023, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1),
-  participants: Math.floor(Math.random() * 5) + 1,
-  imageUrl: `/placeholder.svg?height=400&width=400&text=Moment${i + 1}`,
-  tags: ["love", "friendship", "celebration"][Math.floor(Math.random() * 3)],
-  price: (Math.random() * 0.2 + 0.05).toFixed(3),
-}))
-
-// Move the categories/badges data outside the component to ensure consistency
-const MOMENT_CATEGORIES = [
-  { id: 1, label: "love", color: "bg-purple-500" },
-  { id: 2, label: "celebration", color: "bg-pink-500" },
-  // ... other categories
-] as const
+// Define the moment type
+interface Moment {
+  id: string
+  title: string
+  description: string
+  imageUrl: string
+  creatorAddress: string
+  date: string
+  participants: number
+  price: number
+  pricingType: string
+  status: string
+}
 
 export default function DiscoverPage() {
   const [searchQuery, setSearchQuery] = useState("")
-  const [selectedImage, setSelectedImage] = useState<number | null>(null)
+  const [selectedMoment, setSelectedMoment] = useState<Moment | null>(null)
   const [isMinting, setIsMinting] = useState(false)
+  const [moments, setMoments] = useState<Moment[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Fetch moments from the API
+  useEffect(() => {
+    const fetchMoments = async () => {
+      try {
+        setLoading(true)
+        const queryParam = searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : ""
+        const response = await fetch(`/api/discover${queryParam}`)
+        
+        if (!response.ok) {
+          throw new Error("Failed to fetch moments")
+        }
+        
+        const data = await response.json()
+        setMoments(data)
+      } catch (error) {
+        console.error("Error fetching moments:", error)
+        setError("Failed to load moments. Please try again later.")
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchMoments()
+  }, [searchQuery])
 
   // Handle highlight parameter from URL
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && moments.length > 0) {
       const { searchParams } = new URL(window.location.href)
       const highlightId = searchParams.get("highlight")
 
       if (highlightId) {
-        const id = Number.parseInt(highlightId)
-        const foundImage = mockImages.find((img) => img.id === id)
-        if (foundImage) {
-          setSelectedImage(id)
+        const foundMoment = moments.find((m) => m.id === highlightId)
+        if (foundMoment) {
+          setSelectedMoment(foundMoment)
         }
       }
     }
-  }, [])
-
-  const filteredImages = mockImages.filter(
-    (image) =>
-      image.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      image.description.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+  }, [moments])
 
   const handleMint = async () => {
+    if (!selectedMoment) return
+    
     setIsMinting(true)
-    // Simulate minting delay
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    setIsMinting(false)
-    setSelectedImage(null)
+    try {
+      const response = await fetch('/api/discover', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ momentId: selectedMoment.id }),
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to mint moment')
+      }
+      
+      // Handle successful minting
+      const result = await response.json()
+      console.log('Minting successful:', result)
+      
+      // Close the dialog after successful minting
+      setSelectedMoment(null)
+    } catch (error) {
+      console.error('Error minting moment:', error)
+    } finally {
+      setIsMinting(false)
+    }
   }
-
-  // Get the selected image data
-  const selectedImageData = selectedImage !== null ? mockImages[selectedImage - 1] : null
 
   // Function to truncate text
   const truncateText = (text: string, maxLength: number) => {
     if (text.length <= maxLength) return text
     return text.substring(0, maxLength) + "..."
+  }
+
+  // Format date
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
   }
 
   return (
@@ -95,81 +139,133 @@ export default function DiscoverPage() {
 
         <h1 className="text-3xl font-bold mb-6 text-center">Discover Moments</h1>
 
-        {/* Image Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredImages.map((image) => (
-            <div
-              key={image.id}
-              className="rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow bg-white cursor-pointer"
-              onClick={() => setSelectedImage(image.id)}
-            >
-              <div className="aspect-square relative">
-                <Image src={image.imageUrl || "/placeholder.svg"} alt={image.title} fill className="object-cover" />
-              </div>
-              <div className="p-4">
-                <h3 className="font-bold text-lg mb-2">{image.title}</h3>
-                <p className="text-gray-600 text-sm mb-3">{truncateText(image.description, 150)}</p>
-                <div className="flex justify-between items-center">
-                  <Badge className={`${MOMENT_CATEGORIES.find(c => c.label === image.tags)?.color} text-white`}>
-                    {image.tags}
-                  </Badge>
-                  <span className="text-sm text-gray-500">{image.participants} participants</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Mint Dialog */}
-        <Dialog open={selectedImage !== null} onOpenChange={() => setSelectedImage(null)}>
-          <DialogContent className="max-w-2xl p-4 sm:p-6">
-            <DialogHeader>
-              <DialogTitle className="text-xl sm:text-2xl">{selectedImageData?.title}</DialogTitle>
-              <DialogDescription>
-                Created by {selectedImageData?.creator} on {selectedImageData?.date.toLocaleDateString()}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="aspect-square relative rounded-lg overflow-hidden">
-                {selectedImageData && (
-                  <Image
-                    src={selectedImageData.imageUrl || "/placeholder.svg"}
-                    alt={selectedImageData.title}
-                    fill
-                    className="object-cover"
-                  />
-                )}
-              </div>
-              <div className="flex flex-col">
-                <div className="flex-1">
-                  <h3 className="font-medium text-lg mb-2">Description</h3>
-                  <p className="text-gray-600 mb-4">{selectedImageData?.description}</p>
-
-                  <div className="space-y-2 mb-4">
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Participants:</span>
-                      <span className="font-medium">{selectedImageData?.participants}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Category:</span>
-                      <span className="font-medium">{selectedImageData?.tags}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Minting Price:</span>
-                      <span className="font-medium">{selectedImageData?.price} ETH</span>
-                    </div>
+        {/* Loading State */}
+        {loading && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="rounded-lg overflow-hidden shadow-md bg-white">
+                <Skeleton className="aspect-square w-full" />
+                <div className="p-4 space-y-2">
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
+                  <div className="flex justify-between pt-2">
+                    <Skeleton className="h-5 w-20" />
+                    <Skeleton className="h-5 w-24" />
                   </div>
                 </div>
-
-                <Button
-                  className="w-full bg-purple-500 hover:bg-purple-600 mt-auto"
-                  onClick={handleMint}
-                  disabled={isMinting}
-                >
-                  {isMinting ? "Minting..." : "Mint this Moment"}
-                </Button>
               </div>
-            </div>
+            ))}
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <div className="text-center py-10">
+            <p className="text-red-500 mb-4">{error}</p>
+            <Button onClick={() => window.location.reload()}>Try Again</Button>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && !error && moments.length === 0 && (
+          <div className="text-center py-10">
+            <p className="text-gray-500 mb-2">No published moments found</p>
+            <p className="text-gray-400">Be the first to publish a moment!</p>
+          </div>
+        )}
+
+        {/* Image Grid */}
+        {!loading && !error && moments.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {moments.map((moment) => (
+              <div
+                key={moment.id}
+                className="rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow bg-white cursor-pointer"
+                onClick={() => setSelectedMoment(moment)}
+              >
+                <div className="aspect-square relative">
+                  <Image 
+                    src={moment.imageUrl || "/placeholder.svg"} 
+                    alt={moment.title} 
+                    fill 
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  />
+                </div>
+                <div className="p-4">
+                  <h3 className="font-bold text-lg mb-2">{moment.title}</h3>
+                  <p className="text-gray-600 text-sm mb-3">{truncateText(moment.description, 150)}</p>
+                  <div className="flex justify-between items-center">
+                    <Badge className="bg-purple-500 text-white">
+                      {moment.pricingType === "free" ? "Free" : `${moment.price} ETH`}
+                    </Badge>
+                    <span className="text-sm text-gray-500">{moment.participants} participants</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Mint Dialog */}
+        <Dialog open={selectedMoment !== null} onOpenChange={(open) => !open && setSelectedMoment(null)}>
+          <DialogContent className="max-w-2xl p-4 sm:p-6">
+            {selectedMoment && (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="text-xl sm:text-2xl">{selectedMoment.title}</DialogTitle>
+                  <DialogDescription>
+                    Created by {selectedMoment.creatorAddress} on {formatDate(selectedMoment.date)}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="aspect-square relative rounded-lg overflow-hidden">
+                    <Image
+                      src={selectedMoment.imageUrl || "/placeholder.svg"}
+                      alt={selectedMoment.title}
+                      fill
+                      className="object-contain"
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <div className="flex-1">
+                      <h3 className="font-medium text-lg mb-2">Description</h3>
+                      <p className="text-gray-600 mb-4">{selectedMoment.description}</p>
+
+                      <div className="space-y-2 mb-4">
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Participants:</span>
+                          <span className="font-medium">{selectedMoment.participants}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Status:</span>
+                          <span className="font-medium capitalize">{selectedMoment.status}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Minting Price:</span>
+                          <span className="font-medium">
+                            {selectedMoment.pricingType === "free" 
+                              ? "Free" 
+                              : `${selectedMoment.price} ETH`}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Button
+                      className="w-full bg-purple-500 hover:bg-purple-600 mt-auto"
+                      onClick={handleMint}
+                      disabled={isMinting}
+                    >
+                      {isMinting ? "Minting..." : "Mint this Moment"}
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
           </DialogContent>
         </Dialog>
       </main>
