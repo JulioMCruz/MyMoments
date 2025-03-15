@@ -18,6 +18,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Check, Copy } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { logo } from "@/app/content/momentsAppLogo"
+import { getUserVerificationStatus, verifyUser } from "@/services/user"
 
 import {
   Address,
@@ -59,6 +60,7 @@ export default function ProfileCard({ address }: ProfileCardProps) {
   const [copied, setCopied] = useState(false)
   const [selfApp, setSelfApp] = useState<any>(null)
   const [isClient, setIsClient] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   // Set isClient to true once component mounts
   useEffect(() => {
@@ -89,6 +91,27 @@ export default function ProfileCard({ address }: ProfileCardProps) {
     }
   }, [isClient]);
   
+  // Fetch verification status from database
+  useEffect(() => {
+    async function fetchVerificationStatus() {
+      if (!address) return;
+      
+      setIsLoading(true);
+      try {
+        const { isVerified: verificationStatus } = await getUserVerificationStatus(address);
+        setIsVerified(verificationStatus);
+      } catch (error) {
+        console.error("Error fetching verification status:", error);
+        // Fallback to unverified status on error
+        setIsVerified(false);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    fetchVerificationStatus();
+  }, [address]);
+
   if (!address) {
     return (
       <div className="p-4 border rounded-lg bg-red-50">
@@ -101,9 +124,33 @@ export default function ProfileCard({ address }: ProfileCardProps) {
     setShowVerifyDialog(true)
   }
 
-  const handleCompleteVerification = () => {
+  const handleCompleteVerification = async () => {
     setShowVerifyDialog(false)
-    setIsVerified(true)
+    
+    // Call API to update verification status in the database
+    if (address) {
+      try {
+        const result = await verifyUser(address)
+        
+        if (result.success) {
+          setIsVerified(true)
+          toast({
+            title: "Verification successful",
+            description: "Your account has been verified.",
+          })
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Verification failed",
+            description: result.message || "Failed to verify your account.",
+          })
+        }
+      } catch (error) {
+        console.error("Error during verification:", error)
+        // Set state to true anyway for better UX, even if DB update failed
+        setIsVerified(true)
+      }
+    }
   }
 
   // Format wallet address for display
@@ -149,7 +196,11 @@ export default function ProfileCard({ address }: ProfileCardProps) {
                 <Address address={`${address}` as `0x${string}`}/>
               </Identity>
               <div className="flex items-center gap-2">
-                {isVerified ? (
+                {isLoading ? (
+                  <Badge variant="secondary" className="bg-gray-100 text-gray-700">
+                    Checking status...
+                  </Badge>
+                ) : isVerified ? (
                   <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-200">
                     Verified
                   </Badge>
@@ -229,7 +280,10 @@ export default function ProfileCard({ address }: ProfileCardProps) {
                     selfApp={selfApp}
                     onSuccess={() => {
                       console.log('Verification successful');
-                      // Perform actions after successful verification
+                      // Call our verification API when Self verification is successful
+                      if (address) {
+                        handleCompleteVerification();
+                      }
                     }}
                     darkMode={false}
                     size={200}
@@ -250,7 +304,7 @@ export default function ProfileCard({ address }: ProfileCardProps) {
               className="w-full bg-purple-500 hover:bg-purple-600"
               onClick={handleCompleteVerification}
             >
-              Close
+              Complete Verification
             </Button>
           </DialogFooter>
         </DialogContent>

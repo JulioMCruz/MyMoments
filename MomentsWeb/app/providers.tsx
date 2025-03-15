@@ -7,6 +7,7 @@ import { coinbaseWallet } from 'wagmi/connectors';
 import { WagmiProvider, createConfig, http } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { logo } from './content/momentsAppLogo';
+import { UserProvider } from '@/context/UserContext';
 
 // Create a client
 const queryClient = new QueryClient();
@@ -37,7 +38,9 @@ export function Providers(props: { children: ReactNode }) {
             }
           }}
         >
-          {props.children}
+          <UserProvider>
+            {props.children}
+          </UserProvider>
         </OnchainKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
