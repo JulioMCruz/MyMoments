@@ -19,11 +19,11 @@ export default function MobileMenu({ variant = "main" }: MobileMenuProps) {
           { href: "/dashboard", label: "Dashboard" },
           { href: "/discover", label: "Discover" },
           { href: "/collection", label: "Collection" },
-          { href: "/create-moment", label: "Create Moment", highlight: true },
+          // { href: "/create-moment", label: "Create Moment", highlight: true },
         ]
       : [
           { href: "/dashboard", label: "Dashboard" },
-          { href: "/create-moment", label: "Create" },
+          // { href: "/create-moment", label: "Create" },
           { href: "/discover", label: "Discover" },
           { href: "/collection", label: "Collection" },
         ]
