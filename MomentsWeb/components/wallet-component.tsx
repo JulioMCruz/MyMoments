@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import {
   ConnectWallet,
   Wallet,
@@ -21,8 +22,20 @@ import { color } from '@coinbase/onchainkit/theme';
 import { useAccount } from 'wagmi';
 
 export function WalletComponent() {
-
   const address = useAccount();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (!isClient) {
+    return <div className="flex justify-end">
+      <button className="bg-white text-purple-600 px-4 py-2 rounded-full text-sm font-medium">
+        Connect Wallet
+      </button>
+    </div>;
+  }
 
   return (
     <div className="flex justify-end">

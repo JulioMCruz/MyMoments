@@ -5,6 +5,7 @@ import type React from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Camera, Plus } from "lucide-react"
+import dynamic from "next/dynamic"
 import Header from "@/components/dashboard/header"
 import Footer from "@/components/footer"
 import { Button } from "@/components/ui/button"
@@ -12,7 +13,12 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import ConfettiExplosion from "react-confetti-explosion"
+
+// Dynamically import ConfettiExplosion with SSR disabled
+const ConfettiExplosion = dynamic(() => import("react-confetti-explosion"), {
+  ssr: false,
+  loading: () => null
+})
 
 export default function CreateMomentPage() {
   const router = useRouter()
