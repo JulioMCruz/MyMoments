@@ -282,10 +282,7 @@ export default function ProfileCard({ address }: ProfileCardProps) {
                     selfApp={selfApp}
                     onSuccess={() => {
                       console.log('Verification successful');
-                      // Call our verification API when Self verification is successful
-                      if (address) {
-                        handleCompleteVerification();
-                      }
+                      // Perform actions after successful verification
                     }}
                     darkMode={false}
                     size={200}
