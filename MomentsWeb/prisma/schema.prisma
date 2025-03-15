@@ -23,7 +23,7 @@ model Moment {
   description  String
   imageUrl     String
   ipfsHash     String
-  status       String              @default("proposed")
+  status       String              @default("created")
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
   creatorId    String

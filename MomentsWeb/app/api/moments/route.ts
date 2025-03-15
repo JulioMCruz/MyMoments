@@ -40,9 +40,33 @@ export async function GET(request: Request) {
         }
       })
 
-      return NextResponse.json(moments)
+      // Transform moments to include calculated status
+      const transformedMoments = moments.map(moment => {
+        // If the database still has "proposed" status, convert it to "created"
+        let currentStatus = moment.status === "proposed" ? "created" : moment.status.toLowerCase()
+        
+        // Calculate the actual status based on participant signatures
+        if (moment.participants.length > 0) {
+          const allSigned = moment.participants.every(p => p.hasSigned)
+          
+          if (allSigned) {
+            currentStatus = "completed"
+          } else if (moment.participants.some(p => p.hasSigned)) {
+            currentStatus = "pending"
+          } else {
+            currentStatus = "created"
+          }
+        }
+        
+        return {
+          ...moment,
+          status: currentStatus
+        }
+      })
+
+      return NextResponse.json(transformedMoments)
     } else {
-      // If no wallet address is provided, return all moments
+      // If no wallet address is provided, return all moments with calculated status
       const moments = await prisma.moment.findMany({
         include: {
           creator: true,
@@ -54,7 +78,30 @@ export async function GET(request: Request) {
         }
       })
 
-      return NextResponse.json(moments)
+      const transformedMoments = moments.map(moment => {
+        // If the database still has "proposed" status, convert it to "created"
+        let currentStatus = moment.status === "proposed" ? "created" : moment.status.toLowerCase()
+        
+        // Calculate the actual status based on participant signatures
+        if (moment.participants.length > 0) {
+          const allSigned = moment.participants.every(p => p.hasSigned)
+          
+          if (allSigned) {
+            currentStatus = "completed"
+          } else if (moment.participants.some(p => p.hasSigned)) {
+            currentStatus = "pending"
+          } else {
+            currentStatus = "created"
+          }
+        }
+        
+        return {
+          ...moment,
+          status: currentStatus
+        }
+      })
+
+      return NextResponse.json(transformedMoments)
     }
   } catch (error) {
     console.error("Error fetching moments:", error)
@@ -85,7 +132,7 @@ export async function POST(request: Request) {
       })
     }
 
-    // Create the new moment
+    // Create the new moment with "created" status instead of "proposed"
     const newMoment = await prisma.moment.create({
       data: {
         title,
@@ -93,7 +140,7 @@ export async function POST(request: Request) {
         imageUrl,
         ipfsHash,
         creatorId: creator.id,
-        status: "proposed"
+        status: "created"
       }
     })
 
