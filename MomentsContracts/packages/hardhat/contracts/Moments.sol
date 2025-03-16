@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Moments is Ownable {
     enum MomentStatus { Created, Pending, Complete }
-    
+
     struct Participant {
         address wallet;
         bool signed;
@@ -18,26 +18,29 @@ contract Moments is Ownable {
         string imageUrl;
         MomentStatus status;
         uint256 cost;
+        bool isPublished;
         address[] publishTo;
         mapping(address => Participant) participants;
         address[] participantList;
-        bool isPublished;
     }
 
     mapping(uint256 => Moment) private moments;
     uint256 private momentCount;
+    address private registryContract;
 
     event MomentCreated(uint256 indexed momentId, address indexed creator, string title);
     event MomentSigned(uint256 indexed momentId, address indexed participant);
-    event MomentPublished(uint256 indexed momentId, address[] recipients, uint256 cost);
+    event MomentPublished(uint256 indexed momentId, bool isPublic, address[] recipients, uint256 cost);
 
-    /**
-     * @dev Creates a new moment.
-     * @param title The title of the moment.
-     * @param description The description of the moment.
-     * @param imageUrl The image URL of the moment.
-     * @param participants The list of participant wallet addresses.
-     */
+    modifier onlyRegistry() {
+        require(msg.sender == registryContract, "Unauthorized");
+        _;
+    }
+
+    function setRegistryContract(address _registryContract) external onlyOwner {
+        registryContract = _registryContract;
+    }
+
     function createMoment(
         string memory title,
         string memory description,
@@ -61,10 +64,6 @@ contract Moments is Ownable {
         emit MomentCreated(momentCount, msg.sender, title);
     }
 
-    /**
-     * @dev Allows a participant to sign the moment.
-     * @param momentId The ID of the moment.
-     */
     function signMoment(uint256 momentId) external {
         Moment storage moment = moments[momentId];
         require(moment.participants[msg.sender].wallet != address(0), "Not a participant");
@@ -73,7 +72,6 @@ contract Moments is Ownable {
         moment.participants[msg.sender].signed = true;
         emit MomentSigned(momentId, msg.sender);
 
-        // Check if all participants signed
         bool allSigned = true;
         for (uint256 i = 0; i < moment.participantList.length; i++) {
             if (!moment.participants[moment.participantList[i]].signed) {
@@ -82,20 +80,9 @@ contract Moments is Ownable {
             }
         }
 
-        // Update status if complete
-        if (allSigned) {
-            moment.status = MomentStatus.Complete;
-        } else {
-            moment.status = MomentStatus.Pending;
-        }
+        moment.status = allSigned ? MomentStatus.Complete : MomentStatus.Pending;
     }
 
-    /**
-     * @dev Publishes a moment.
-     * @param momentId The ID of the moment.
-     * @param toWallets The list of wallet addresses to publish to (empty for public).
-     * @param cost The cost to mint (0 for free).
-     */
     function publishMoment(uint256 momentId, address[] memory toWallets, uint256 cost) external onlyOwner {
         Moment storage moment = moments[momentId];
         require(moment.status == MomentStatus.Complete, "Moment not complete");
@@ -105,13 +92,17 @@ contract Moments is Ownable {
         moment.publishTo = toWallets;
         moment.cost = cost;
 
-        emit MomentPublished(momentId, toWallets, cost);
+        if (toWallets.length == 0) {
+            MomentRegistry(registryContract).addPublicMoment(momentId);
+        } else {
+            for (uint256 i = 0; i < toWallets.length; i++) {
+                MomentRegistry(registryContract).addUserMoment(toWallets[i], momentId);
+            }
+        }
+
+        emit MomentPublished(momentId, toWallets.length == 0, toWallets, cost);
     }
 
-    /**
-     * @dev Retrieves moment details.
-     * @param momentId The ID of the moment.
-     */
     function getMoment(uint256 momentId) external view returns (
         address creator,
         string memory title,
@@ -135,19 +126,15 @@ contract Moments is Ownable {
         );
     }
 
-    /**
-     * @dev Retrieves participant status.
-     * @param momentId The ID of the moment.
-     */
     function getParticipants(uint256 momentId) external view returns (address[] memory, bool[] memory) {
         Moment storage moment = moments[momentId];
         uint256 length = moment.participantList.length;
         bool[] memory signedStatus = new bool[](length);
-        
+
         for (uint256 i = 0; i < length; i++) {
             signedStatus[i] = moment.participants[moment.participantList[i]].signed;
         }
-        
+
         return (moment.participantList, signedStatus);
     }
 }
