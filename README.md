@@ -113,3 +113,4 @@ https://docs.farcaster.xyz/developers/frames/v2/
 ## ZetaChain 
 
 Due to technical difficulties the Zetachain portion of the project is in another seperate repo https://github.com/jackiesafari/Zetatest
+
