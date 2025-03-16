@@ -67,6 +67,8 @@ Base: Offers the wallet infrastructure and blockchain for storing NFTs, executin
 
 OpenAI API: Powers natural language understanding and generative components of the AI assistant
 
+ZetaChain : Users initiate the app during a significant moment (event, promise, commitment) The AI assistant suggests ideal formats for capturing the moment based on context Multiple verification methods are prompted at natural intervals.
+
 
 ## Key differentiators and uniqueness of the project
 
@@ -93,14 +95,9 @@ Some compromises we made during developemnt is the lack of additon of an ai agen
 
 #### Base 
 
-
 #### Self
 
-
 #### ZetaChain
-
-Team Moments has integrated Zetachain into their Social media platform Moments. Where users initiate the app during a significant moment (event, promise, commitment) The AI assistant suggests ideal formats for capturing the moment based on context Multiple verification methods are prompted at natural intervals. ZetaChain would elevate the experience through effortless crosschain transactions so everyone can join in the fun!
-
 
 #### Cursor
 
